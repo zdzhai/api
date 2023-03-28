@@ -5,18 +5,18 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.google.gson.Gson;
 import com.zdzhai.apicommon.model.entity.InterfaceInfo;
 import com.zdzhai.apicommon.model.entity.User;
-import com.zdzhai.project.common.*;
-import com.zdzhai.project.model.dto.interfaceInfo.InterfaceInfoInvokeRequest;
-import com.zdzhai.project.model.enums.InterfaceInfoStatusEnum;
-import com.zdzhai.zdzhaiclientsdk.client.ZdzhaiApiClient;
 import com.zdzhai.project.annotation.AuthCheck;
+import com.zdzhai.project.common.*;
 import com.zdzhai.project.constant.CommonConstant;
 import com.zdzhai.project.exception.BusinessException;
 import com.zdzhai.project.model.dto.interfaceInfo.InterfaceInfoAddRequest;
+import com.zdzhai.project.model.dto.interfaceInfo.InterfaceInfoInvokeRequest;
 import com.zdzhai.project.model.dto.interfaceInfo.InterfaceInfoQueryRequest;
 import com.zdzhai.project.model.dto.interfaceInfo.InterfaceInfoUpdateRequest;
+import com.zdzhai.project.model.enums.InterfaceInfoStatusEnum;
 import com.zdzhai.project.service.InterfaceInfoService;
 import com.zdzhai.project.service.UserService;
+import com.zdzhai.zdzhaiclientsdk.client.ZdzhaiApiClient;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
@@ -24,6 +24,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import java.lang.reflect.Method;
 import java.util.List;
 
 /**
@@ -109,7 +110,7 @@ public class InterfaceInfoController {
      */
     @PostMapping("/update")
     public BaseResponse<Boolean> updateInterfaceInfo(@RequestBody InterfaceInfoUpdateRequest interfaceInfoUpdateRequest,
-                                            HttpServletRequest request) {
+                                                     HttpServletRequest request) {
         if (interfaceInfoUpdateRequest == null || interfaceInfoUpdateRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -222,8 +223,8 @@ public class InterfaceInfoController {
         com.zdzhai.zdzhaiclientsdk.model.User user = new com.zdzhai.zdzhaiclientsdk.model.User();
         user.setUsername("zdzhai");
         String username = zdzhaiApiClient.getNameByJson(user);
-        if (StringUtils.isBlank(username)){
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"接口验证失败");
+        if (StringUtils.isBlank(username)) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "接口验证失败");
         }
         InterfaceInfo interfaceInfo = new InterfaceInfo();
         interfaceInfo.setId(id);
@@ -243,7 +244,7 @@ public class InterfaceInfoController {
     @AuthCheck(mustRole = "admin")
     public BaseResponse<Boolean> offlineInterfaceInfo(@RequestBody IdRequest idRequest,
 
-                                                     HttpServletRequest request) {
+                                                      HttpServletRequest request) {
         if (idRequest == null || idRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -262,13 +263,14 @@ public class InterfaceInfoController {
 
     /**
      * 调用接口
+     *
      * @param interfaceInfoInvokeRequest
      * @param request
      * @return
      */
     @PostMapping("/invoke")
     public BaseResponse<String> invokeInterfaceInfo(@RequestBody InterfaceInfoInvokeRequest interfaceInfoInvokeRequest,
-                                                      HttpServletRequest request) {
+                                                    HttpServletRequest request) {
         if (interfaceInfoInvokeRequest == null || interfaceInfoInvokeRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -279,20 +281,48 @@ public class InterfaceInfoController {
         if (oldInterfaceInfo == null) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
         }
-        if (oldInterfaceInfo.getStatus() != InterfaceInfoStatusEnum.ONLINE.getValue()){
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR,"接口已关闭");
+        if (oldInterfaceInfo.getStatus() != InterfaceInfoStatusEnum.ONLINE.getValue()) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "接口已关闭");
         }
+        //todo 直接从请求中获取用户信息是否会暴漏ak，sk，是不是写入session中的应该只有ak,sk应该从数据库中获取
         User loginUser = userService.getLoginUser(request);
 
         String accessKey = loginUser.getAccessKey();
         String secretKey = loginUser.getSecretKey();
         ZdzhaiApiClient zdzhaiApiClient = new ZdzhaiApiClient(accessKey, secretKey);
-        Gson gson = new Gson();
-        com.zdzhai.zdzhaiclientsdk.model.User user =
-                gson.fromJson(requestParams, com.zdzhai.zdzhaiclientsdk.model.User.class);
 
-        String nameByJson = zdzhaiApiClient.getNameByJson(user);
-        return ResultUtils.success(nameByJson);
+        String name = interfaceInfoInvokeRequest.getName();
+        String method = interfaceInfoInvokeRequest.getMethod();
+        //POST请求 请求参数必须为对象 @RequestBody 对请求参数做统一封装
+        if ("POST".equals(method)) {
+            Gson gson = new Gson();
+            com.zdzhai.zdzhaiclientsdk.model.User user =
+                    gson.fromJson(requestParams, com.zdzhai.zdzhaiclientsdk.model.User.class);
+
+            Class<? extends ZdzhaiApiClient> zdzhaiApiClientClass = zdzhaiApiClient.getClass();
+            try {
+                Method realMethod = zdzhaiApiClientClass.getMethod(name, com.zdzhai.zdzhaiclientsdk.model.User.class);
+                Object invokeRes = realMethod.invoke(zdzhaiApiClient, user);
+                String res = (String) invokeRes;
+                return ResultUtils.success(res);
+//                String nameByJson = zdzhaiApiClient.getNameByJson(user);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        if ("GET".equals(method)) {
+            Class<? extends ZdzhaiApiClient> zdzhaiApiClientClass = zdzhaiApiClient.getClass();
+            try {
+                Method realMethod = zdzhaiApiClientClass.getMethod(name, String.class);
+                Object invokeRes = realMethod.invoke(zdzhaiApiClient, requestParams);
+                String res = (String) invokeRes;
+                return ResultUtils.success(res);
+//                String nameByJson = zdzhaiApiClient.getNameByJson(user);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return ResultUtils.error(ErrorCode.SYSTEM_ERROR);
     }
     // endregion
 
