@@ -220,12 +220,13 @@ public class InterfaceInfoController {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
         }
         // 2.判断接口是否可以被调用
-        com.zdzhai.zdzhaiclientsdk.model.User user = new com.zdzhai.zdzhaiclientsdk.model.User();
+        //todo 这里按说也是需要根据方法名动态的去调用判断对应的接口
+/*        com.zdzhai.zdzhaiclientsdk.model.User user = new com.zdzhai.zdzhaiclientsdk.model.User();
         user.setUsername("zdzhai");
         String username = zdzhaiApiClient.getNameByJson(user);
         if (StringUtils.isBlank(username)) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "接口验证失败");
-        }
+        }*/
         InterfaceInfo interfaceInfo = new InterfaceInfo();
         interfaceInfo.setId(id);
         interfaceInfo.setStatus(InterfaceInfoStatusEnum.ONLINE.getValue());
