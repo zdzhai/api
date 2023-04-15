@@ -1,24 +1,42 @@
 package com.zdzhai.project.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.crypto.digest.DigestUtil;
+import cn.hutool.jwt.JWT;
+import cn.hutool.jwt.JWTUtil;
+import com.alibaba.nacos.api.naming.pojo.healthcheck.impl.Http;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zdzhai.apicommon.model.entity.User;
+import com.zdzhai.project.common.CookieConstant;
+import com.zdzhai.project.common.CookieUtils;
 import com.zdzhai.project.common.ErrorCode;
+import com.zdzhai.project.common.TokenUtils;
+import com.zdzhai.project.constant.UserConstant;
 import com.zdzhai.project.exception.BusinessException;
 import com.zdzhai.project.mapper.UserMapper;
+import com.zdzhai.project.model.vo.LoginUserVO;
 import com.zdzhai.project.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.dubbo.rpc.protocol.tri.call.UnaryServerCallListener;
+import org.springframework.beans.BeanUtils;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
 import javax.annotation.Resource;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
-import static com.zdzhai.project.constant.UserConstant.ADMIN_ROLE;
-import static com.zdzhai.project.constant.UserConstant.USER_LOGIN_STATE;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+
+import static com.zdzhai.project.constant.UserConstant.*;
 
 
 /**
@@ -33,6 +51,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Resource
     private UserMapper userMapper;
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     /**
      * 盐值，混淆密码
@@ -83,7 +104,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     @Override
-    public User userLogin(String userAccount, String userPassword, HttpServletRequest request) {
+    public LoginUserVO userLogin(String userAccount, String userPassword,
+                                 HttpServletRequest request,
+                                 HttpServletResponse response) {
         // 1. 校验
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
@@ -106,9 +129,43 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             log.info("user login failed, userAccount cannot match userPassword");
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
         }
-        // 3. 记录用户的登录态
-        request.getSession().setAttribute(USER_LOGIN_STATE, user);
-        return user;
+        // 3. 初始化用户的登录态
+        return initUserLogin(user,response);
+    }
+
+    private LoginUserVO initUserLogin(User user, HttpServletResponse response) {
+        //把用户信息放到redis中
+        User safetyUser = getSafetyUser(user);
+        Map<String, Object> userMap = BeanUtil.beanToMap(safetyUser, true,true);
+        userMap.forEach((key, value) -> {
+            if (null != value) {
+                userMap.put(key, String.valueOf(value));
+            }
+        });
+
+        String userKey = API_USER_ID + safetyUser.getId();
+        stringRedisTemplate.opsForHash().putAll(userKey,userMap);
+        stringRedisTemplate.opsForHash().getOperations().expire(userKey,720, TimeUnit.HOURS);
+
+        LoginUserVO loginUserVO = new LoginUserVO();
+        BeanUtils.copyProperties(user,loginUserVO);
+        TokenUtils tokenUtils = new TokenUtils();
+        //生成token
+        String token = tokenUtils.createToken(user.getId().toString(), loginUserVO.getUserAccount());
+        loginUserVO.setToken(token);
+        Cookie cookie = new Cookie(CookieConstant.headAuthorization, token);
+        cookie.setPath("/");
+        cookie.setMaxAge(CookieConstant.expireTime);
+        //向响应中添加带有token的Cookie
+        response.addCookie(cookie);
+        CookieUtils cookieUtils = new CookieUtils();
+        String autoLoginContent = cookieUtils.generateAutoLoginContent(loginUserVO.getId().toString(), loginUserVO.getUserAccount());
+        Cookie cookie1 = new Cookie(CookieConstant.autoLoginAuthCheck, autoLoginContent);
+        cookie1.setPath("/");
+        //向响应中添加用户记住登录的密钥
+        cookie.setMaxAge(CookieConstant.expireTime);
+        response.addCookie(cookie1);
+        return loginUserVO;
     }
 
     /**
@@ -118,20 +175,57 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @return
      */
     @Override
-    public User getLoginUser(HttpServletRequest request) {
-        // 先判断是否已登录
-        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
-        User currentUser = (User) userObj;
-        if (currentUser == null || currentUser.getId() == null) {
+    public User getLoginUser(HttpServletRequest request, HttpServletResponse response) {
+        //1. 先判断是否已登录 从redis中取
+        //有则返回
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null || cookies.length == 0){
+            return null;
+        }
+        String remember = null;
+        String authorization = null;
+        for ( Cookie cookie : cookies){
+            String name = cookie.getName();
+            if (CookieConstant.headAuthorization.equals(name)){
+                authorization = cookie.getValue();
+            }
+            if (CookieConstant.autoLoginAuthCheck.equals(name)){
+                remember = cookie.getValue();
+            }
+        }
+        //token 信息有问题则抛异常
+        if (authorization == null || remember == null){
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
-        // 从数据库查询（追求性能的话可以注释，直接走缓存）
-        long userId = currentUser.getId();
-        currentUser = this.getById(userId);
-        if (currentUser == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        CookieUtils cookieUtils = new CookieUtils();
+        String[] strings = cookieUtils.decodeAutoLoginKey(remember);
+        if (strings.length!=3){
+            throw new BusinessException(ErrorCode.ILLEGAL_ERROR,"请重新登录");
         }
-        return currentUser;
+        String sId = strings[0];
+        String sUserAccount = strings[1];
+        Map<Object, Object> userMap = stringRedisTemplate.opsForHash().entries(API_USER_ID + sId);
+        if (userMap != null){
+            User user = BeanUtil.mapToBean(userMap, User.class, true, CopyOptions.create()
+                    .setIgnoreNullValue(true)
+                    .setFieldValueEditor((fieldName, fieldValue) -> fieldValue.toString()));
+            return user;
+        } else {
+            //2. 没有则判断token信息
+            JWT jwt = JWTUtil.parseToken(authorization);
+            String id = (String) jwt.getPayload("id");
+            String userAccount = (String) jwt.getPayload("userAccount");
+            if (!sId.equals(id) || !sUserAccount.equals(userAccount)){
+                throw new BusinessException(ErrorCode.PARAMS_ERROR,"请重新登录");
+            }
+            //没问题则调用initUserLogin
+            User userById = this.getById(id);
+            userById.setUserPassword(null);
+            LoginUserVO loginUserVO = initUserLogin(userById, response);
+            User user = new User();
+            BeanUtil.copyProperties(loginUserVO,user);
+            return user;
+        }
     }
 
     /**
@@ -141,11 +235,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @return
      */
     @Override
-    public boolean isAdmin(HttpServletRequest request) {
+    public boolean isAdmin(HttpServletRequest request, HttpServletResponse response) {
         // 仅管理员可查询
-        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
-        User user = (User) userObj;
-        return user != null && ADMIN_ROLE.equals(user.getUserRole());
+        User loginUser = getLoginUser(request, response);
+        return loginUser != null && ADMIN_ROLE.equals(loginUser.getUserRole());
     }
 
     /**
@@ -154,13 +247,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
      * @param request
      */
     @Override
-    public boolean userLogout(HttpServletRequest request) {
-        if (request.getSession().getAttribute(USER_LOGIN_STATE) == null) {
+    public boolean userLogout(HttpServletRequest request, HttpServletResponse response) {
+        if (getLoginUser(request,response) == null) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "未登录");
         }
         // 移除登录态
-        request.getSession().removeAttribute(USER_LOGIN_STATE);
         return true;
+    }
+
+    /**
+     * 脱敏用户信息
+     * @param user
+     * @return
+     */
+    public User getSafetyUser(User user){
+        User safetyUser = new User();
+        BeanUtil.copyProperties(user,safetyUser);
+        safetyUser.setUserPassword(null);
+        safetyUser.setAccessKey(null);
+        safetyUser.setSecretKey(null);
+        return safetyUser;
     }
 
 }

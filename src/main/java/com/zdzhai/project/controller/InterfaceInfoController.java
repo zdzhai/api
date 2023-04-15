@@ -24,8 +24,11 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 接口信息接口
@@ -46,6 +49,10 @@ public class InterfaceInfoController {
     @Resource
     private ZdzhaiApiClient zdzhaiApiClient;
 
+    public static Map<String,Class> objectMap = new HashMap<String,Class>() {{
+        put("getNameByJson",User.class);
+    }};
+
     // region 增删改查
 
     /**
@@ -56,7 +63,9 @@ public class InterfaceInfoController {
      * @return
      */
     @PostMapping("/add")
-    public BaseResponse<Long> addInterfaceInfo(@RequestBody InterfaceInfoAddRequest interfaceInfoAddRequest, HttpServletRequest request) {
+    public BaseResponse<Long> addInterfaceInfo(@RequestBody InterfaceInfoAddRequest interfaceInfoAddRequest,
+                                               HttpServletRequest request,
+                                               HttpServletResponse response) {
         if (interfaceInfoAddRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -64,7 +73,7 @@ public class InterfaceInfoController {
         BeanUtils.copyProperties(interfaceInfoAddRequest, interfaceInfo);
         // 校验
         interfaceInfoService.validInterfaceInfo(interfaceInfo, true);
-        User loginUser = userService.getLoginUser(request);
+        User loginUser = userService.getLoginUser(request, response);
         interfaceInfo.setUserId(loginUser.getId());
         boolean result = interfaceInfoService.save(interfaceInfo);
         if (!result) {
@@ -82,11 +91,13 @@ public class InterfaceInfoController {
      * @return
      */
     @PostMapping("/delete")
-    public BaseResponse<Boolean> deleteInterfaceInfo(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
+    public BaseResponse<Boolean> deleteInterfaceInfo(@RequestBody DeleteRequest deleteRequest,
+                                                     HttpServletRequest request,
+                                                     HttpServletResponse response) {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        User user = userService.getLoginUser(request);
+        User user = userService.getLoginUser(request,response);
         long id = deleteRequest.getId();
         // 判断是否存在
         InterfaceInfo oldInterfaceInfo = interfaceInfoService.getById(id);
@@ -94,7 +105,7 @@ public class InterfaceInfoController {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
         }
         // 仅本人或管理员可删除
-        if (!oldInterfaceInfo.getUserId().equals(user.getId()) && !userService.isAdmin(request)) {
+        if (!oldInterfaceInfo.getUserId().equals(user.getId()) && !userService.isAdmin(request,response)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
         boolean b = interfaceInfoService.removeById(id);
@@ -110,7 +121,8 @@ public class InterfaceInfoController {
      */
     @PostMapping("/update")
     public BaseResponse<Boolean> updateInterfaceInfo(@RequestBody InterfaceInfoUpdateRequest interfaceInfoUpdateRequest,
-                                                     HttpServletRequest request) {
+                                                     HttpServletRequest request,
+                                                     HttpServletResponse response) {
         if (interfaceInfoUpdateRequest == null || interfaceInfoUpdateRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -118,7 +130,7 @@ public class InterfaceInfoController {
         BeanUtils.copyProperties(interfaceInfoUpdateRequest, interfaceInfo);
         // 参数校验
         interfaceInfoService.validInterfaceInfo(interfaceInfo, false);
-        User user = userService.getLoginUser(request);
+        User user = userService.getLoginUser(request,response);
         long id = interfaceInfoUpdateRequest.getId();
         // 判断是否存在
         InterfaceInfo oldInterfaceInfo = interfaceInfoService.getById(id);
@@ -126,7 +138,7 @@ public class InterfaceInfoController {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
         }
         // 仅本人或管理员可修改
-        if (!oldInterfaceInfo.getUserId().equals(user.getId()) && !userService.isAdmin(request)) {
+        if (!oldInterfaceInfo.getUserId().equals(user.getId()) && !userService.isAdmin(request,response)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
         boolean result = interfaceInfoService.updateById(interfaceInfo);
@@ -271,7 +283,8 @@ public class InterfaceInfoController {
      */
     @PostMapping("/invoke")
     public BaseResponse<String> invokeInterfaceInfo(@RequestBody InterfaceInfoInvokeRequest interfaceInfoInvokeRequest,
-                                                    HttpServletRequest request) {
+                                                    HttpServletRequest request,
+                                                    HttpServletResponse response) {
         if (interfaceInfoInvokeRequest == null || interfaceInfoInvokeRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -286,24 +299,24 @@ public class InterfaceInfoController {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "接口已关闭");
         }
         //todo 直接从请求中获取用户信息是否会暴漏ak，sk，是不是写入session中的应该只有ak,sk应该从数据库中获取
-        User loginUser = userService.getLoginUser(request);
+        User loginUser = userService.getLoginUser(request,response);
 
         String accessKey = loginUser.getAccessKey();
         String secretKey = loginUser.getSecretKey();
-        ZdzhaiApiClient zdzhaiApiClient = new ZdzhaiApiClient(accessKey, secretKey);
+        ZdzhaiApiClient<User> zdzhaiApiClient = new ZdzhaiApiClient<>(accessKey, secretKey);
 
         String name = interfaceInfoInvokeRequest.getName();
         String method = interfaceInfoInvokeRequest.getMethod();
         //POST请求 请求参数必须为对象 @RequestBody 对请求参数做统一封装
         if ("POST".equals(method)) {
             Gson gson = new Gson();
-            com.zdzhai.zdzhaiclientsdk.model.User user =
-                    gson.fromJson(requestParams, com.zdzhai.zdzhaiclientsdk.model.User.class);
+            Object obj = gson.fromJson(requestParams, objectMap.get(name));
 
             Class<? extends ZdzhaiApiClient> zdzhaiApiClientClass = zdzhaiApiClient.getClass();
             try {
-                Method realMethod = zdzhaiApiClientClass.getMethod(name, com.zdzhai.zdzhaiclientsdk.model.User.class);
-                Object invokeRes = realMethod.invoke(zdzhaiApiClient, user);
+                //使用map来对调用方法和封装对象做映射
+                Method realMethod = zdzhaiApiClientClass.getMethod(name, objectMap.get(name));
+                Object invokeRes = realMethod.invoke(zdzhaiApiClient, obj);
                 String res = (String) invokeRes;
                 return ResultUtils.success(res);
 //                String nameByJson = zdzhaiApiClient.getNameByJson(user);

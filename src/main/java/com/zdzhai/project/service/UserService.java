@@ -5,8 +5,10 @@ package com.zdzhai.project.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.zdzhai.apicommon.model.entity.User;
+import com.zdzhai.project.model.vo.LoginUserVO;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * 用户服务
@@ -33,7 +35,7 @@ public interface UserService extends IService<User> {
      * @param request
      * @return 脱敏后的用户信息
      */
-    User userLogin(String userAccount, String userPassword, HttpServletRequest request);
+    LoginUserVO userLogin(String userAccount, String userPassword, HttpServletRequest request, HttpServletResponse response);
 
     /**
      * 获取当前登录用户
@@ -41,7 +43,7 @@ public interface UserService extends IService<User> {
      * @param request
      * @return
      */
-    User getLoginUser(HttpServletRequest request);
+    User getLoginUser(HttpServletRequest request, HttpServletResponse response);
 
     /**
      * 是否为管理员
@@ -49,7 +51,7 @@ public interface UserService extends IService<User> {
      * @param request
      * @return
      */
-    boolean isAdmin(HttpServletRequest request);
+    boolean isAdmin(HttpServletRequest request, HttpServletResponse response);
 
     /**
      * 用户注销
@@ -57,5 +59,5 @@ public interface UserService extends IService<User> {
      * @param request
      * @return
      */
-    boolean userLogout(HttpServletRequest request);
+    boolean userLogout(HttpServletRequest request, HttpServletResponse response);
 }

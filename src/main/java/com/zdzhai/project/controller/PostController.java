@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
 /**
@@ -51,7 +52,9 @@ public class PostController {
      * @return
      */
     @PostMapping("/add")
-    public BaseResponse<Long> addPost(@RequestBody PostAddRequest postAddRequest, HttpServletRequest request) {
+    public BaseResponse<Long> addPost(@RequestBody PostAddRequest postAddRequest,
+                                      HttpServletRequest request,
+                                      HttpServletResponse response) {
         if (postAddRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -59,7 +62,7 @@ public class PostController {
         BeanUtils.copyProperties(postAddRequest, post);
         // 校验
         postService.validPost(post, true);
-        User loginUser = userService.getLoginUser(request);
+        User loginUser = userService.getLoginUser(request,response);
         post.setUserId(loginUser.getId());
         boolean result = postService.save(post);
         if (!result) {
@@ -77,11 +80,13 @@ public class PostController {
      * @return
      */
     @PostMapping("/delete")
-    public BaseResponse<Boolean> deletePost(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
+    public BaseResponse<Boolean> deletePost(@RequestBody DeleteRequest deleteRequest,
+                                            HttpServletRequest request,
+                                            HttpServletResponse response) {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        User user = userService.getLoginUser(request);
+        User user = userService.getLoginUser(request, response);
         long id = deleteRequest.getId();
         // 判断是否存在
         Post oldPost = postService.getById(id);
@@ -89,7 +94,7 @@ public class PostController {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
         }
         // 仅本人或管理员可删除
-        if (!oldPost.getUserId().equals(user.getId()) && !userService.isAdmin(request)) {
+        if (!oldPost.getUserId().equals(user.getId()) && !userService.isAdmin(request,response)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
         boolean b = postService.removeById(id);
@@ -105,7 +110,8 @@ public class PostController {
      */
     @PostMapping("/update")
     public BaseResponse<Boolean> updatePost(@RequestBody PostUpdateRequest postUpdateRequest,
-                                            HttpServletRequest request) {
+                                            HttpServletRequest request,
+                                            HttpServletResponse response) {
         if (postUpdateRequest == null || postUpdateRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -113,7 +119,7 @@ public class PostController {
         BeanUtils.copyProperties(postUpdateRequest, post);
         // 参数校验
         postService.validPost(post, false);
-        User user = userService.getLoginUser(request);
+        User user = userService.getLoginUser(request, response);
         long id = postUpdateRequest.getId();
         // 判断是否存在
         Post oldPost = postService.getById(id);
@@ -121,7 +127,7 @@ public class PostController {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
         }
         // 仅本人或管理员可修改
-        if (!oldPost.getUserId().equals(user.getId()) && !userService.isAdmin(request)) {
+        if (!oldPost.getUserId().equals(user.getId()) && !userService.isAdmin(request,response)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
         boolean result = postService.updateById(post);

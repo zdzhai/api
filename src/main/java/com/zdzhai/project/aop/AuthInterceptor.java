@@ -17,6 +17,7 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -47,8 +48,9 @@ public class AuthInterceptor {
         String mustRole = authCheck.mustRole();
         RequestAttributes requestAttributes = RequestContextHolder.currentRequestAttributes();
         HttpServletRequest request = ((ServletRequestAttributes) requestAttributes).getRequest();
+        HttpServletResponse response = ((ServletRequestAttributes) requestAttributes).getResponse();
         // 当前登录用户
-        User user = userService.getLoginUser(request);
+        User user = userService.getLoginUser(request,response);
         // 拥有任意权限即通过
         if (CollectionUtils.isNotEmpty(anyRole)) {
             String userRole = user.getUserRole();

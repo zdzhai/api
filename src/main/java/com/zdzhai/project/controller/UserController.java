@@ -10,6 +10,7 @@ import com.zdzhai.project.common.DeleteRequest;
 import com.zdzhai.project.common.ErrorCode;
 import com.zdzhai.project.common.ResultUtils;
 import com.zdzhai.project.exception.BusinessException;
+import com.zdzhai.project.model.vo.LoginUserVO;
 import com.zdzhai.project.model.vo.UserVO;
 import com.zdzhai.project.service.UserService;
 import org.apache.commons.lang3.StringUtils;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -64,7 +66,9 @@ public class UserController {
      * @return
      */
     @PostMapping("/login")
-    public BaseResponse<User> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+    public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest,
+                                               HttpServletRequest request,
+                                               HttpServletResponse response) {
         if (userLoginRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -73,8 +77,8 @@ public class UserController {
         if (StringUtils.isAnyBlank(userAccount, userPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        User user = userService.userLogin(userAccount, userPassword, request);
-        return ResultUtils.success(user);
+        LoginUserVO loginUserVO = userService.userLogin(userAccount, userPassword, request, response);
+        return ResultUtils.success(loginUserVO);
     }
 
     /**
@@ -84,11 +88,12 @@ public class UserController {
      * @return
      */
     @PostMapping("/logout")
-    public BaseResponse<Boolean> userLogout(HttpServletRequest request) {
+    public BaseResponse<Boolean> userLogout(HttpServletRequest request,
+                                            HttpServletResponse response) {
         if (request == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        boolean result = userService.userLogout(request);
+        boolean result = userService.userLogout(request, response);
         return ResultUtils.success(result);
     }
 
@@ -99,8 +104,8 @@ public class UserController {
      * @return
      */
     @GetMapping("/get/login")
-    public BaseResponse<UserVO> getLoginUser(HttpServletRequest request) {
-        User user = userService.getLoginUser(request);
+    public BaseResponse<UserVO> getLoginUser(HttpServletRequest request, HttpServletResponse response) {
+        User user = userService.getLoginUser(request, response);
         UserVO userVO = new UserVO();
         BeanUtils.copyProperties(user, userVO);
         return ResultUtils.success(userVO);

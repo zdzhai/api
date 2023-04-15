@@ -13,6 +13,11 @@ public interface UserConstant {
     String USER_LOGIN_STATE = "userLoginState";
 
     /**
+     * 用户信息的redisKEY
+     */
+    String API_USER_ID = "api:user:";
+
+    /**
      * 系统用户 id（虚拟用户）
      */
     long SYSTEM_USER_ID = 0;

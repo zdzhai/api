@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -13,6 +14,7 @@ import java.util.Date;
  * 用户
  * @TableName user
  */
+@NoArgsConstructor
 @TableName(value ="user")
 @Data
 public class User implements Serializable {
@@ -90,4 +92,8 @@ public class User implements Serializable {
 
     @TableField(exist = false)
     private static final long serialVersionUID = 1L;
+
+    public User(String userName) {
+        this.userName = userName;
+    }
 }
