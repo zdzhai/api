@@ -13,6 +13,7 @@ import com.zdzhai.project.exception.BusinessException;
 import com.zdzhai.project.model.vo.LoginUserVO;
 import com.zdzhai.project.model.vo.UserVO;
 import com.zdzhai.project.service.UserService;
+import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
@@ -44,18 +45,33 @@ public class UserController {
      * @return
      */
     @PostMapping("/register")
-    public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
+    public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest,
+                                           HttpServletRequest request) {
         if (userRegisterRequest == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        String userAccount = userRegisterRequest.getUserAccount();
-        String userPassword = userRegisterRequest.getUserPassword();
-        String checkPassword = userRegisterRequest.getCheckPassword();
-        if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword)) {
-            return null;
-        }
-        long result = userService.userRegister(userAccount, userPassword, checkPassword);
+        long result = userService.userRegister(userRegisterRequest, request);
         return ResultUtils.success(result);
+    }
+
+    /**
+     * 获取图片验证码
+     * @param request
+     * @param response
+     */
+    @GetMapping("/getCaptcha")
+    public void getCaptcha(HttpServletRequest request, HttpServletResponse response){
+        userService.getCaptcha(request,response);
+    }
+
+    @ApiOperation("向手机号发送短信验证码")
+    @GetMapping
+    public BaseResponse<String>  messageCaptcha(@RequestParam String mobile){
+        if (mobile == null || "".equals(mobile)){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+         String success =  userService.messageCaptcha(mobile);
+        return ResultUtils.success(success);
     }
 
     /**

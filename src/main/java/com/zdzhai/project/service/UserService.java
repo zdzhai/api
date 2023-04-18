@@ -5,6 +5,7 @@ package com.zdzhai.project.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.zdzhai.apicommon.model.entity.User;
+import com.zdzhai.project.model.dto.user.UserRegisterRequest;
 import com.zdzhai.project.model.vo.LoginUserVO;
 
 import javax.servlet.http.HttpServletRequest;
@@ -18,14 +19,13 @@ import javax.servlet.http.HttpServletResponse;
 public interface UserService extends IService<User> {
 
     /**
-     * 用户注册
      *
-     * @param userAccount   用户账户
-     * @param userPassword  用户密码
-     * @param checkPassword 校验密码
-     * @return 新用户 id
+     * @param userRegisterRequest
+     * @param request
+     * @return
      */
-    long userRegister(String userAccount, String userPassword, String checkPassword);
+    long userRegister(UserRegisterRequest userRegisterRequest,
+                      HttpServletRequest request);
 
     /**
      * 用户登录
@@ -60,4 +60,18 @@ public interface UserService extends IService<User> {
      * @return
      */
     boolean userLogout(HttpServletRequest request, HttpServletResponse response);
+
+    /**
+     * 生成图形验证码
+     * @param request
+     * @param response
+     */
+    void getCaptcha(HttpServletRequest request, HttpServletResponse response);
+
+    /**
+     * 向手机号发送短信验证码
+     * @param mobile
+     * @return
+     */
+    String messageCaptcha(String mobile);
 }

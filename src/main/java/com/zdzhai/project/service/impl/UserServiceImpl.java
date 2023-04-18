@@ -1,27 +1,26 @@
 package com.zdzhai.project.service.impl;
 
+import cn.hutool.captcha.CaptchaUtil;
+import cn.hutool.captcha.LineCaptcha;
+import cn.hutool.captcha.generator.RandomGenerator;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.crypto.digest.DigestUtil;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
-import com.alibaba.nacos.api.naming.pojo.healthcheck.impl.Http;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zdzhai.apicommon.model.entity.User;
-import com.zdzhai.project.common.CookieConstant;
-import com.zdzhai.project.common.CookieUtils;
-import com.zdzhai.project.common.ErrorCode;
-import com.zdzhai.project.common.TokenUtils;
-import com.zdzhai.project.constant.UserConstant;
+import com.zdzhai.project.common.*;
 import com.zdzhai.project.exception.BusinessException;
 import com.zdzhai.project.mapper.UserMapper;
+import com.zdzhai.project.model.dto.SmsDTO;
+import com.zdzhai.project.model.dto.user.UserRegisterRequest;
 import com.zdzhai.project.model.vo.LoginUserVO;
 import com.zdzhai.project.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.dubbo.rpc.protocol.tri.call.UnaryServerCallListener;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -31,8 +30,6 @@ import javax.annotation.Resource;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -55,15 +52,29 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
+    @Resource
+    SmsLimiter smsLimiter;
+
     /**
      * 盐值，混淆密码
      */
     private static final String SALT = "zhai";
 
     @Override
-    public long userRegister(String userAccount, String userPassword, String checkPassword) {
+    public long userRegister(UserRegisterRequest userRegisterRequest,
+                             HttpServletRequest request) {
+        if (userRegisterRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        String userAccount = userRegisterRequest.getUserAccount();
+        String userPassword = userRegisterRequest.getUserPassword();
+        String checkPassword = userRegisterRequest.getCheckPassword();
+        String mobile = userRegisterRequest.getMobile();
+        String code = userRegisterRequest.getCode();
+        String captcha = userRegisterRequest.getCaptcha();
         // 1. 校验
-        if (StringUtils.isAnyBlank(userAccount, userPassword, checkPassword)) {
+        if (StringUtils.isAnyBlank(userAccount, userPassword,
+                checkPassword, mobile, code, captcha)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
         }
         if (userAccount.length() < 4) {
@@ -76,6 +87,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         if (!userPassword.equals(checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的密码不一致");
         }
+        CheckPhoneNumber checkPhoneNumber = new CheckPhoneNumber();
+       if( !checkPhoneNumber.isPhoneNum(mobile)){
+           throw new BusinessException(ErrorCode.PARAMS_ERROR, "手机号格式错误");
+       }
+        String signature = request.getHeader("signature");
+        if (signature == null){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        String redisCaptcha = stringRedisTemplate.opsForValue().get(API_CAPTCHA_ID + signature);
+        if (redisCaptcha == null || checkPhoneNumber.isCaptcha(captcha) ||   !captcha.equals(redisCaptcha)){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"图形验证码错误或已经过期，请重新刷新验证码");
+        }
+        // 手机号和验证码是否匹配
+        boolean isVerify = smsLimiter.verifyCode(mobile, code);
+        if (!isVerify){
+            throw new BusinessException(ErrorCode.SMS_CODE_ERROR);
+        }
         synchronized (userAccount.intern()) {
             // 账户不能重复
             QueryWrapper<User> queryWrapper = new QueryWrapper<>();
@@ -83,6 +111,10 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             long count = userMapper.selectCount(queryWrapper);
             if (count > 0) {
                 throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号重复");
+            }
+            String selectMobileNum = userMapper.selectMobileNum(mobile);
+            if (selectMobileNum != null){
+                throw new BusinessException(ErrorCode.PARAMS_ERROR,"手机号已被注册");
             }
             // 2. 加密
             String encryptPassword = DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
@@ -162,7 +194,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         String autoLoginContent = cookieUtils.generateAutoLoginContent(loginUserVO.getId().toString(), loginUserVO.getUserAccount());
         Cookie cookie1 = new Cookie(CookieConstant.autoLoginAuthCheck, autoLoginContent);
         cookie1.setPath("/");
-        //向响应中添加用户记住登录的密钥
+        //向响应中添加用户记住登录态的密钥
         cookie.setMaxAge(CookieConstant.expireTime);
         response.addCookie(cookie1);
         return loginUserVO;
@@ -253,6 +285,62 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         // 移除登录态
         return true;
+    }
+
+    @Override
+    public void getCaptcha(HttpServletRequest request, HttpServletResponse response) {
+        //1. 生成随机数以及颜色验证码图片
+        //2. 通过response响应到浏览器
+        //3. 前端携带一个唯一标识，用于标识不同用户，进行判断，也可以一防止盗刷
+        //4. 存储验证码到redis，用于验证
+        RandomGenerator randomGenerator = new RandomGenerator("0123456789", 4);
+        //定义图形验证码的长和宽
+        LineCaptcha lineCaptcha = CaptchaUtil.createLineCaptcha(100, 30);
+        response.setContentType("image/jpeg");
+        response.setHeader("Pragma", "No-cache");
+        //在前端发起请求时携带一个captchaId，用于标识不同的用户
+        String signature = request.getHeader("signature");
+        if (signature == null){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        try{
+            //设置验证码
+            lineCaptcha.setGenerator(randomGenerator);
+            //图形验证码写出到页面
+            lineCaptcha.write(response.getOutputStream());
+            // 打印日志
+            log.info("captchaId：{} ----生成的验证码:{}", signature,lineCaptcha.getCode());
+            //关闭流
+            response.getOutputStream().close();
+            //将验证码存到redis中，有效期为2min
+            stringRedisTemplate.opsForValue().set(API_CAPTCHA_ID+signature, lineCaptcha.getCode(),2,TimeUnit.MINUTES);
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public String messageCaptcha(String mobile) {
+        if (mobile == null || "".equals(mobile)){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        CheckPhoneNumber checkPhoneNumber = new CheckPhoneNumber();
+        //验证手机号是否合法
+        // 生成验证码，
+        // 用redis保存手机号和验证码,并使用后令牌桶算法实现发送控制
+        //调用第三方去发送验证码
+        boolean isPhoneNum = checkPhoneNumber.isPhoneNum(mobile);
+        if (!isPhoneNum){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR,"手机号非法");
+        }
+         int messageCode = (int) ((Math.random() * 9 + 1) * 10000);
+        boolean isSend = smsLimiter.sendSmsAuth(mobile, String.valueOf(messageCode));
+        if (!isSend){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"操作频繁，请稍后重试");
+        }
+        SmsDTO smsDTO = new SmsDTO(mobile, String.valueOf(messageCode));
+        //todo 实际发送短信的功能交给第三方服务去实现
+        return "发送成功";
     }
 
     /**

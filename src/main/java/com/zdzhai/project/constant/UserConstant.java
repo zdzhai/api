@@ -18,6 +18,11 @@ public interface UserConstant {
     String API_USER_ID = "api:user:";
 
     /**
+     * 验证码的redisKEY
+     */
+    String API_CAPTCHA_ID = "api:captchaId:";
+
+    /**
      * 系统用户 id（虚拟用户）
      */
     long SYSTEM_USER_ID = 0;

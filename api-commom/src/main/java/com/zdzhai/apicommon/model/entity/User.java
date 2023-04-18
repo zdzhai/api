@@ -61,6 +61,12 @@ public class User implements Serializable {
     private String userPassword;
 
     /**
+     * 手机号
+     */
+    @TableField(value = "mobile")
+    private String mobile;
+
+    /**
      * accessKey
      */
     @TableField(value = "accessKey")
