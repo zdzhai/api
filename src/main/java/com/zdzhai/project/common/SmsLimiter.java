@@ -3,6 +3,7 @@ package com.zdzhai.project.common;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -17,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 public class SmsLimiter {
 
     @Resource
-    private RedisTemplate<String, String> redisTemplate;
+    private StringRedisTemplate stringRedisTemplate;
 
     @Autowired
     private RedisTokenBucket redisTokenBucket;
@@ -36,7 +37,7 @@ public class SmsLimiter {
         if (redisTokenBucket.tryAcquire(SMS_PREFIX + phoneNumber)) {
             // 通过验证后，向redis中写入数据
             String key = CODE_PREFIX + phoneNumber;
-            redisTemplate.opsForValue().set(key, code, CODE_EXPIRE_TIME, TimeUnit.SECONDS);
+            stringRedisTemplate.opsForValue().set(key, code, CODE_EXPIRE_TIME, TimeUnit.SECONDS);
             return true;
         } else {
             log.info("send sms to " + phoneNumber + " rejected due to rate limiting");
@@ -52,9 +53,9 @@ public class SmsLimiter {
      */
     public boolean verifyCode(String phoneNumber, String code) {
         String key = CODE_PREFIX + phoneNumber;
-        String value = redisTemplate.opsForValue().get(key);
+        String value = stringRedisTemplate.opsForValue().get(key);
         if (value != null && value.equals(code)) {
-            redisTemplate.delete(key);
+            stringRedisTemplate.delete(key);
             return true;
         }
         return false;

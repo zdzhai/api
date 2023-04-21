@@ -22,7 +22,7 @@ public class WebConfig implements WebMvcConfigurer {
     /**
      * 放行接口
      */
-    private List<String> pathPatterns = Arrays.asList("/userInterfaceInfo/updateUserLeftNum","/get/login","/user/captcha", "/user/register","/user/login","/user/loginBySms","/user/getCaptcha","/v3/api-docs","/user/logoutSuccess","/user/getpassusertype","/user/sendPassUserCode","/user/authPassUserCode","/user/updateUserPass");
+    private List<String> pathPatterns = Arrays.asList("/userInterfaceInfo/updateUserLeftNum","/get/login","/user/captcha", "/user/register","/user/login","/user/loginBySms","/user/getCaptcha","/user/messageCaptcha","/v3/api-docs","/user/logoutSuccess","/user/getpassusertype","/user/sendPassUserCode","/user/authPassUserCode","/user/updateUserPass");
 
     /**
      * 放行静态资源

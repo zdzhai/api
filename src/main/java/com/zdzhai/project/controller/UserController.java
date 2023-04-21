@@ -65,7 +65,7 @@ public class UserController {
     }
 
     @ApiOperation("向手机号发送短信验证码")
-    @GetMapping
+    @GetMapping("/messageCaptcha")
     public BaseResponse<String>  messageCaptcha(@RequestParam String mobile){
         if (mobile == null || "".equals(mobile)){
             throw new BusinessException(ErrorCode.PARAMS_ERROR);

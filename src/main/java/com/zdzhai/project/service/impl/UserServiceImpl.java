@@ -253,6 +253,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
             //没问题则调用initUserLogin
             User userById = this.getById(id);
             userById.setUserPassword(null);
+            userById.setSecretKey(null);
             LoginUserVO loginUserVO = initUserLogin(userById, response);
             User user = new User();
             BeanUtil.copyProperties(loginUserVO,user);
@@ -340,7 +341,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         }
         SmsDTO smsDTO = new SmsDTO(mobile, String.valueOf(messageCode));
         //todo 实际发送短信的功能交给第三方服务去实现
-        return "发送成功";
+        return String.valueOf(messageCode);
     }
 
     /**

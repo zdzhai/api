@@ -298,11 +298,11 @@ public class InterfaceInfoController {
         if (oldInterfaceInfo.getStatus() != InterfaceInfoStatusEnum.ONLINE.getValue()) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "接口已关闭");
         }
-        //todo 直接从请求中获取用户信息是否会暴漏ak，sk，是不是写入session中的应该只有ak,sk应该从数据库中获取
         User loginUser = userService.getLoginUser(request,response);
 
         String accessKey = loginUser.getAccessKey();
-        String secretKey = loginUser.getSecretKey();
+        User skUser = userService.getById(loginUser.getId());
+        String secretKey = skUser.getSecretKey();
         ZdzhaiApiClient<User> zdzhaiApiClient = new ZdzhaiApiClient<>(accessKey, secretKey);
 
         String name = interfaceInfoInvokeRequest.getName();
@@ -319,7 +319,6 @@ public class InterfaceInfoController {
                 Object invokeRes = realMethod.invoke(zdzhaiApiClient, obj);
                 String res = (String) invokeRes;
                 return ResultUtils.success(res);
-//                String nameByJson = zdzhaiApiClient.getNameByJson(user);
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -331,7 +330,6 @@ public class InterfaceInfoController {
                 Object invokeRes = realMethod.invoke(zdzhaiApiClient, requestParams);
                 String res = (String) invokeRes;
                 return ResultUtils.success(res);
-//                String nameByJson = zdzhaiApiClient.getNameByJson(user);
             } catch (Exception e) {
                 e.printStackTrace();
             }
