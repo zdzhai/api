@@ -1,6 +1,30 @@
 spring:
+  # DataSource Config
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/api
     username: root
-    password: 123456
+    password: zzd
+  # session 失效时间（分钟）
+  session:
+    timeout: 86400
+    store-type: redis
+  # redis 配置
+  redis:
+    port: 6379
+    host: localhost
+    database: 0
+server:
+  port: 7529
+  servlet:
+    context-path: /api
+
+dubbo:
+  application:
+    name: api-backend
+  protocol:
+    name: dubbo
+    port: -1
+  registry:
+    id: nacos-registry
+    address: nacos://127.0.0.1:8848

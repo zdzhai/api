@@ -1,6 +1,6 @@
-package com.zdzhai.project.exception;
+package com.zdzhai.apicommon.exception;
 
-import com.zdzhai.project.common.ErrorCode;
+import com.zdzhai.apicommon.common.ErrorCode;
 
 /**
  * 自定义异常类

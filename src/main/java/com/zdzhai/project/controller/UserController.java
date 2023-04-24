@@ -3,13 +3,17 @@ package com.zdzhai.project.controller;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.plugins.pagination.PageDTO;
+import com.zdzhai.apicommon.common.BaseResponse;
+import com.zdzhai.apicommon.common.ErrorCode;
+import com.zdzhai.apicommon.common.ResultUtils;
+import com.zdzhai.apicommon.exception.BusinessException;
 import com.zdzhai.apicommon.model.entity.User;
 import com.zdzhai.project.model.dto.user.*;
-import com.zdzhai.project.common.BaseResponse;
+
 import com.zdzhai.project.common.DeleteRequest;
-import com.zdzhai.project.common.ErrorCode;
-import com.zdzhai.project.common.ResultUtils;
-import com.zdzhai.project.exception.BusinessException;
+
+
+import com.zdzhai.project.model.vo.AkVO;
 import com.zdzhai.project.model.vo.LoginUserVO;
 import com.zdzhai.project.model.vo.UserVO;
 import com.zdzhai.project.service.UserService;
@@ -127,6 +131,18 @@ public class UserController {
         return ResultUtils.success(userVO);
     }
 
+    /**
+     * 根据用户id获取用户的密钥
+     * @param id
+     * @param request
+     * @return
+     */
+    @GetMapping("/getAkByUserId")
+    public BaseResponse<AkVO> getAkByUserId(@RequestParam Long id ,
+                                              HttpServletRequest request,
+                                              HttpServletResponse response){
+        return userService.getAkByUserId(id,request,response);
+    }
     // endregion
 
     // region 增删改查

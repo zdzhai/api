@@ -4,8 +4,10 @@ package com.zdzhai.project.service;
 
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.zdzhai.apicommon.common.BaseResponse;
 import com.zdzhai.apicommon.model.entity.User;
 import com.zdzhai.project.model.dto.user.UserRegisterRequest;
+import com.zdzhai.project.model.vo.AkVO;
 import com.zdzhai.project.model.vo.LoginUserVO;
 
 import javax.servlet.http.HttpServletRequest;
@@ -74,4 +76,14 @@ public interface UserService extends IService<User> {
      * @return
      */
     String messageCaptcha(String mobile);
+
+    /**
+     * 返回用户的ak信息
+     * @param id
+     * @param request
+     * @param response
+     * @return
+     */
+    BaseResponse<AkVO> getAkByUserId(Long id, HttpServletRequest request,
+                                       HttpServletResponse response);
 }

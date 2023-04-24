@@ -1,4 +1,4 @@
-package com.zdzhai.project.common;
+package com.zdzhai.apicommon.common;
 
 /**
  * 返回工具类
@@ -25,7 +25,7 @@ public class ResultUtils {
      * @return
      */
     public static BaseResponse error(ErrorCode errorCode) {
-        return new BaseResponse<>(errorCode);
+        return new BaseResponse(errorCode);
     }
 
     /**

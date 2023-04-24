@@ -11,12 +11,17 @@ import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.zdzhai.apicommon.common.BaseResponse;
+import com.zdzhai.apicommon.common.ErrorCode;
+import com.zdzhai.apicommon.common.ResultUtils;
+import com.zdzhai.apicommon.exception.BusinessException;
 import com.zdzhai.apicommon.model.entity.User;
 import com.zdzhai.project.common.*;
-import com.zdzhai.project.exception.BusinessException;
+
 import com.zdzhai.project.mapper.UserMapper;
 import com.zdzhai.project.model.dto.SmsDTO;
 import com.zdzhai.project.model.dto.user.UserRegisterRequest;
+import com.zdzhai.project.model.vo.AkVO;
 import com.zdzhai.project.model.vo.LoginUserVO;
 import com.zdzhai.project.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -190,6 +195,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         cookie.setMaxAge(CookieConstant.expireTime);
         //向响应中添加带有token的Cookie
         response.addCookie(cookie);
+        response.setHeader("Access-Control-Allow-Credentials", "true");
         CookieUtils cookieUtils = new CookieUtils();
         String autoLoginContent = cookieUtils.generateAutoLoginContent(loginUserVO.getId().toString(), loginUserVO.getUserAccount());
         Cookie cookie1 = new Cookie(CookieConstant.autoLoginAuthCheck, autoLoginContent);
@@ -197,6 +203,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         //向响应中添加用户记住登录态的密钥
         cookie.setMaxAge(CookieConstant.expireTime);
         response.addCookie(cookie1);
+        response.setHeader("Access-Control-Allow-Credentials", "true");
         return loginUserVO;
     }
 
@@ -353,11 +360,38 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         User safetyUser = new User();
         BeanUtil.copyProperties(user,safetyUser);
         safetyUser.setUserPassword(null);
-        safetyUser.setAccessKey(null);
         safetyUser.setSecretKey(null);
+        safetyUser.setUpdateTime(null);
         return safetyUser;
     }
-
+    /**
+     * 根据用户id获取用户的密钥
+     * @param id
+     * @param request
+     * @return
+     */
+    @Override
+    public BaseResponse<AkVO> getAkByUserId(Long id, HttpServletRequest request,
+                                              HttpServletResponse response) {
+        if (id <=0 || id ==null ){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        // 先判断是否已登录
+        User currentUser = getLoginUser(request, response);
+        if (currentUser == null || currentUser.getId() == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        if (!currentUser.getId().equals(id)){
+            throw new BusinessException(ErrorCode.FORBIDDEN_ERROR);
+        }
+        User user = userMapper.selectById(id);
+        if(null == user){
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        AkVO authVO = new AkVO();
+        authVO.setAccesskey(user.getAccessKey());
+        return ResultUtils.success(authVO);
+    }
 }
 
 

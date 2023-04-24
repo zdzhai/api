@@ -1,8 +1,10 @@
 package com.zdzhai.project.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.zdzhai.project.exception.BusinessException;
-import com.zdzhai.project.common.ErrorCode;
+
+
+import com.zdzhai.apicommon.common.ErrorCode;
+import com.zdzhai.apicommon.exception.BusinessException;
 import com.zdzhai.project.mapper.PostMapper;
 import com.zdzhai.project.model.entity.Post;
 import com.zdzhai.project.model.enums.PostGenderEnum;

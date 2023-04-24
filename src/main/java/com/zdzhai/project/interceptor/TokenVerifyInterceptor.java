@@ -2,13 +2,12 @@ package com.zdzhai.project.interceptor;
 
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
+import com.zdzhai.apicommon.common.ErrorCode;
+import com.zdzhai.apicommon.exception.BusinessException;
 import com.zdzhai.apicommon.model.entity.User;
 import com.zdzhai.project.common.CookieConstant;
-import com.zdzhai.project.common.ErrorCode;
 import com.zdzhai.project.common.TokenUtils;
-import com.zdzhai.project.exception.BusinessException;
 import com.zdzhai.project.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
 
