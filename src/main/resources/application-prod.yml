@@ -4,7 +4,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://localhost:3306/api
     username: root
-    password: zzd
+    password: xxx
   # session 失效时间（分钟）
   session:
     timeout: 86400
@@ -13,6 +13,7 @@ spring:
   redis:
     port: 6379
     host: localhost
+    password: xxx
     database: 0
 server:
   port: 7529

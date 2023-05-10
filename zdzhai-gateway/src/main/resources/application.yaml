@@ -1,0 +1,41 @@
+server:
+  port: 8090
+
+logging:
+  level:
+    org:
+      springframework:
+        cloud:
+          gatewaty: trace
+spring:
+  main:
+    web-application-type: reactive
+  cloud:
+    gateway:
+      routes:
+        - id: add_request_header_route
+          uri: http://localhost:8123
+          predicates:
+            - Path=/api/** # 访问这里出现问题就降级为fallback
+          #            - After=2017-01-20T17:42:47.789-07:00[America/Denver]
+          #            - RemoteAddr = 192.168.1.1/24
+          filters:
+            - AddRequestHeader=zdzhai, swag
+#            - AddRequestParameter=name, xing
+#            - name: CircuitBreaker
+#                args:
+#                  name: myCircuitBreaker
+#                  fallbackUri: forward:/fallback
+#        - id: zdzhai-fallback
+#            uri: https://www.baidu.com
+#            predicates:
+#              - Path=/fallback
+dubbo:
+  application:
+    name: zdzhai-gateway
+  protocol:
+    name: dubbo
+    port: -1
+  registry:
+    id: nacos-registry
+    address: nacos://127.0.0.1:8848

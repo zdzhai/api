@@ -10,7 +10,7 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.zdzhai</groupId>
-    <artifactId>api-commom</artifactId>
+    <artifactId>api-common</artifactId>
     <version>0.0.1</version>
     <name>api-common</name>
     <description>api开放平台公共类</description>

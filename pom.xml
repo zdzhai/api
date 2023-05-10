@@ -57,7 +57,7 @@
         </dependency>
         <dependency>
             <groupId>com.zdzhai</groupId>
-            <artifactId>api-commom</artifactId>
+            <artifactId>api-common</artifactId>
             <version>0.0.1</version>
         </dependency>
         <dependency>

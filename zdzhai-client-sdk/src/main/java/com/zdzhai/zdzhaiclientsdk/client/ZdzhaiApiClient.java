@@ -6,11 +6,15 @@ import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.HttpUtil;
 import cn.hutool.json.JSONUtil;
-import com.zdzhai.zdzhaiclientsdk.model.User;
+import com.google.gson.Gson;
+import com.zdzhai.apicommon.common.ErrorCode;
+import com.zdzhai.apicommon.model.dto.ApiDTO;
+import com.zdzhai.apicommon.model.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,32 +28,96 @@ import static com.zdzhai.zdzhaiclientsdk.utils.SignUtil.getSign;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ZdzhaiApiClient {
+public class ZdzhaiApiClient<T> {
 
     private String accessKey;
 
     private String secretKey;
 
+    private static final String GATEWAY_HOST = "http://localhost:8090";
+
+    /**
+     * 方法名和参数封装类建立map
+     */
+    public static Map<String,Class> objectMap = new HashMap<>();
+    static {
+        objectMap.put("getNameByPost",com.zdzhai.apicommon.model.requestbody.User.class);
+        objectMap.put("getNameByGet",String.class);
+        objectMap.put("getName",String.class);
+        objectMap.put("getTuwei",String.class);
+        objectMap.put("getJitang",String.class);
+    }
+
+    /**
+     * 处理所有的接口请求
+     * @param apiDTO
+     * @return
+     */
+    public String handleInvoke(ApiDTO apiDTO){
+        String name = apiDTO.getName();
+        String method = apiDTO.getMethod();
+        String requestParams = apiDTO.getRequestParams();
+        Class<ZdzhaiApiClient> zdzhaiApiClientClass = ZdzhaiApiClient.class;
+        //POST请求 请求参数必须为对象 @RequestBody 对请求参数做统一封装
+        if ("POST".equals(method)||"post".equals(method)) {
+            Gson gson = new Gson();
+            Object obj = gson.fromJson(requestParams, objectMap.get(name));
+            try {
+                //使用map来对调用方法和封装对象做映射
+                //也可以是配置文件
+                Method realMethod = zdzhaiApiClientClass.getMethod(name, objectMap.get(name));
+                Object invokeRes = realMethod.invoke(this, obj);
+                return (String) invokeRes;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        else if ("GET".equals(method)||"get".equals(method)) {
+            try {
+                Method realMethod = zdzhaiApiClientClass.getMethod(name, objectMap.get(name));
+                Object invokeRes = realMethod.invoke(this, requestParams);
+                return (String) invokeRes;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return ErrorCode.SYSTEM_ERROR.getMessage();
+    }
+
     public String getNameByGet(String name) {
         HashMap<String, Object> paramMap = new HashMap<>();
         paramMap.put("name", name);
-        String result = HttpUtil.get("http://localhost:8123/api/name/", paramMap);
-        System.out.println(result);
-        return result;
+        HttpResponse httpResponse = HttpRequest.get(GATEWAY_HOST + "/api/name/get")
+                .addHeaders(getHeaderMap(name))
+                .body(name)
+                .execute();
+        return httpResponse.body();
     }
 
-    public String getNameByPost(String name ){
+    public String getTuwei(String id) {
         HashMap<String, Object> paramMap = new HashMap<>();
-        paramMap.put("name", name);
-        String result = HttpUtil.post("http://localhost:8123/api/name/", paramMap);
-        System.out.println(result);
-        return result;
+        paramMap.put("id", id);
+        HttpResponse httpResponse = HttpRequest.get(GATEWAY_HOST + "/api/get/tuwei")
+                .addHeaders(getHeaderMap(id))
+                .body(id)
+                .execute();
+        return httpResponse.body();
     }
 
-    public String getNameByJson( User user){
+    public String getJitang(String id) {
+        HashMap<String, Object> paramMap = new HashMap<>();
+        paramMap.put("id", id);
+        HttpResponse httpResponse = HttpRequest.get(GATEWAY_HOST + "/api/get/jitang")
+                .addHeaders(getHeaderMap(id))
+                .body(id)
+                .execute();
+        return httpResponse.body();
+    }
+
+    public String getNameByPost(User user){
         String json = JSONUtil.toJsonStr(user);
         //链式构建请求
-        HttpResponse httpResponse = HttpRequest.post("http://localhost:8123/api/name/user")
+        HttpResponse httpResponse = HttpRequest.post(GATEWAY_HOST + "/api/name/post")
                 .addHeaders(getHeaderMap(json))
                 .body(json)
                 .execute();
