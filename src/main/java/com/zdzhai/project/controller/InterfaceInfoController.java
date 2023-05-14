@@ -9,6 +9,7 @@ import com.zdzhai.apicommon.exception.BusinessException;
 import com.zdzhai.apicommon.model.dto.ApiDTO;
 import com.zdzhai.apicommon.model.entity.InterfaceInfo;
 import com.zdzhai.apicommon.model.entity.User;
+import com.zdzhai.project.annotation.AccessLimit;
 import com.zdzhai.project.annotation.AuthCheck;
 import com.zdzhai.project.common.DeleteRequest;
 import com.zdzhai.project.common.IdRequest;
@@ -285,6 +286,7 @@ public class InterfaceInfoController {
      * @return
      */
     @PostMapping("/invoke")
+    @AccessLimit(sec = 1)
     public BaseResponse<String> invokeInterfaceInfo(@RequestBody InterfaceInfoInvokeRequest interfaceInfoInvokeRequest,
                                                     HttpServletRequest request,
                                                     HttpServletResponse response) {

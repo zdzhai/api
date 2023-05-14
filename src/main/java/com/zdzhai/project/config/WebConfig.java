@@ -1,5 +1,6 @@
 package com.zdzhai.project.config;
 
+import com.zdzhai.project.interceptor.AccessLimitInterceptor;
 import com.zdzhai.project.interceptor.TokenVerifyInterceptor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -19,6 +20,9 @@ public class WebConfig implements WebMvcConfigurer {
     @Resource
     private TokenVerifyInterceptor tokenVerifyInterceptor;
 
+    @Resource
+    private AccessLimitInterceptor accessLimitInterceptor;
+
     /**
      * 放行接口
      */
@@ -34,6 +38,9 @@ public class WebConfig implements WebMvcConfigurer {
         //这里不能直接new 拦截器，否则在拦截器中会出现无法注入service的问题
         registry.addInterceptor(tokenVerifyInterceptor)
                 .excludePathPatterns(pathPatterns)
-                .excludePathPatterns(staticPath);
+                .excludePathPatterns(staticPath).order(1);
+        registry.addInterceptor(accessLimitInterceptor)
+                .excludePathPatterns(pathPatterns)
+                .excludePathPatterns(staticPath).order(2);
     }
 }
