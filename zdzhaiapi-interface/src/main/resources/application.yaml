@@ -8,9 +8,9 @@ spring:
       matching-strategy: ANT_PATH_MATCHER
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://58.199.176.39:3306/api
+    url: jdbc:mysql://xxx:3306/api
     username: root
-    password: zzd981124
+    password: xxx
 zdzhai:
   client:
     access-key: zdzhai
