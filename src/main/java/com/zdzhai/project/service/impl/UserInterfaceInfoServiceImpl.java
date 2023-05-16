@@ -1,5 +1,6 @@
 package com.zdzhai.project.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zdzhai.apicommon.common.ErrorCode;
@@ -9,7 +10,10 @@ import com.zdzhai.project.mapper.UserInterfaceInfoMapper;
 import com.zdzhai.project.service.UserInterfaceInfoService;
 
 
+import org.springframework.aop.framework.AopContext;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Date;
 
@@ -19,6 +23,7 @@ import java.util.Date;
  * @createDate 2023-03-24 19:57:31
  */
 @Service
+@EnableAspectJAutoProxy(exposeProxy = true,proxyTargetClass = true)
 public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoMapper, UserInterfaceInfo>
         implements UserInterfaceInfoService {
 
@@ -50,16 +55,50 @@ public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoM
     }
 
     @Override
+
     public boolean invokeCount(long interfaceInfoId, long userId) {
-        //todo 这里应该加事务和锁，防止多线程下出现错误
         //1.校验参数
-        if (interfaceInfoId <= 0 || userId <= 0){
+        if (interfaceInfoId <= 0 || userId <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        //2. 改数据库
+
+        synchronized (Long.toString(userId).intern()) {
+            UserInterfaceInfoService proxy = (UserInterfaceInfoService) AopContext.currentProxy();
+            return proxy.createUserInterfaceInfo(interfaceInfoId, userId);
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = RuntimeException.class)
+    public boolean createUserInterfaceInfo(long interfaceInfoId, long userId) {
+        //2.查数据库
+        QueryWrapper<UserInterfaceInfo> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("userId", userId);
+        queryWrapper.eq("interfaceInfoId", interfaceInfoId);
+        UserInterfaceInfo userInterfaceInfo;
+        userInterfaceInfo = this.getOne(queryWrapper);
+        if (userInterfaceInfo == null) {
+            //创建数据
+           userInterfaceInfo = new UserInterfaceInfo();
+            userInterfaceInfo.setUserId(userId);
+            userInterfaceInfo.setInterfaceInfoId(interfaceInfoId);
+            userInterfaceInfo.setTotalNum(0L);
+            userInterfaceInfo.setLeftNum(20L);
+            userInterfaceInfo.setStatus(0);
+            userInterfaceInfo.setIsDelete(0);
+            boolean save = this.save(userInterfaceInfo);
+            if (!save) {
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+            }
+        }
+        Long leftNum = userInterfaceInfo.getLeftNum();
+        if (leftNum <= 0) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无调用次数！");
+        }
+        //3. 改数据库
         UpdateWrapper<UserInterfaceInfo> updateWrapper = new UpdateWrapper<>();
-        updateWrapper.eq("userId",userId);
-        updateWrapper.eq("interfaceInfoId",interfaceInfoId);
+        updateWrapper.eq("userId", userId);
+        updateWrapper.eq("interfaceInfoId", interfaceInfoId);
         updateWrapper.setSql("leftNum = leftNum - 1,totalNum = totalNum + 1");
         return this.update(updateWrapper);
     }

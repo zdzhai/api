@@ -3,6 +3,10 @@ package com.zdzhai.project.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.zdzhai.apicommon.model.entity.InterfaceInfo;
+import com.zdzhai.project.model.vo.EchartsVO;
+import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
 * @author 62618
@@ -12,6 +16,7 @@ import com.zdzhai.apicommon.model.entity.InterfaceInfo;
 */
 public interface InterfaceInfoMapper extends BaseMapper<InterfaceInfo> {
 
+    List<EchartsVO> getInterfaceList(@Param("dateList") List<String> dateList);
 }
 
 

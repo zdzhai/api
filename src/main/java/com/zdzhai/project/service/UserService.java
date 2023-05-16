@@ -12,6 +12,7 @@ import com.zdzhai.project.model.vo.LoginUserVO;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.List;
 
 /**
  * 用户服务
@@ -86,4 +87,16 @@ public interface UserService extends IService<User> {
      */
     BaseResponse<AkVO> getAkByUserId(Long id, HttpServletRequest request,
                                        HttpServletResponse response);
+
+    /**
+     * 获取GitHub上这个项目的stars
+     * @return
+     */
+    String getGithubStars();
+
+    /**
+     * 获取echarts需要展示的数据
+     * @return
+     */
+    List<Object> getEchartsData();
 }

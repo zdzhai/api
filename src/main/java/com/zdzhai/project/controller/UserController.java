@@ -42,6 +42,25 @@ public class UserController {
 
     // region 登录相关
 
+    @ApiOperation("获取全站用户数")
+    @GetMapping("/getActiveUser")
+    public BaseResponse getActiveUser(){
+        return ResultUtils.success(userService.count(new QueryWrapper<User>().eq("isDelete",0)));
+    }
+
+    @ApiOperation("获取GitHub的stars")
+    @GetMapping("/getGithubStars")
+    public BaseResponse<String> getGithubStars(){
+        String stars = userService.getGithubStars();
+        return ResultUtils.success(stars);
+    }
+
+    @ApiOperation("获取echarts需要展示的数据")
+    @GetMapping("/getEchartsData")
+    public BaseResponse<List<Object>> getEchartsData(){
+        List list = userService.getEchartsData();
+        return ResultUtils.success(list);
+    }
     /**
      * 用户注册
      *

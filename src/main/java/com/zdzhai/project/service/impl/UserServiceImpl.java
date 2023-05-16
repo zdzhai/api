@@ -6,7 +6,10 @@ import cn.hutool.captcha.generator.RandomGenerator;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.core.util.ReUtil;
 import cn.hutool.crypto.digest.DigestUtil;
+import cn.hutool.http.HttpUtil;
+import cn.hutool.json.JSONUtil;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
@@ -18,14 +21,17 @@ import com.zdzhai.apicommon.exception.BusinessException;
 import com.zdzhai.apicommon.model.entity.User;
 import com.zdzhai.project.common.*;
 
+import com.zdzhai.project.mapper.InterfaceInfoMapper;
 import com.zdzhai.project.mapper.UserMapper;
 import com.zdzhai.project.model.dto.SmsDTO;
 import com.zdzhai.project.model.dto.user.UserRegisterRequest;
 import com.zdzhai.project.model.vo.AkVO;
+import com.zdzhai.project.model.vo.EchartsVO;
 import com.zdzhai.project.model.vo.LoginUserVO;
 import com.zdzhai.project.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.time.DateUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -35,7 +41,8 @@ import javax.annotation.Resource;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static com.zdzhai.project.constant.UserConstant.*;
@@ -53,6 +60,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
     @Resource
     private UserMapper userMapper;
+
+    @Resource
+    private InterfaceInfoMapper interfaceInfoMapper;
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
@@ -391,6 +401,93 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         AkVO authVO = new AkVO();
         authVO.setAccesskey(user.getAccessKey());
         return ResultUtils.success(authVO);
+    }
+
+    /**
+     * 获取GitHub上这个项目的stars
+     * @return
+     */
+    @Override
+    public String getGithubStars() {
+        String listContent = null;
+        try {
+            listContent= HttpUtil.get("https://img.shields.io/github/stars/zdzhai?style=social");
+        }catch (Exception e){
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"获取GitHub Starts 超时");
+        }
+        //该操作查询时间较长
+        List<String> titles = ReUtil.findAll("<title>(.*?)</title>", listContent, 1);
+        String stars = null;
+        for (String title : titles) {
+            //打印标题
+            String[] split = title.split(":");
+            stars = split[1];
+        }
+        return stars;
+    }
+
+    /**
+     * 获取echarts需要展示的数据
+     * @return
+     */
+    @Override
+    public List<Object> getEchartsData() {
+        //1、获取最近7天的日期
+        List<String> dateList = new ArrayList<>();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        for (int i = 0; i < 7; i++) {
+            Date date = DateUtils.addDays(new Date(), -i);
+            String formatDate = sdf.format(date);
+            dateList.add(formatDate);
+        }
+        ArrayList<Object> objects = new ArrayList<>();
+        //3、根据最近七天的日期去数据库中查询用户信息
+        ArrayList<Long> userList = extracted(dateList, userMapper.getUserList(dateList),false);
+        //4、查询最近7天的接口信息
+        ArrayList<Long> interfaceList = extracted(dateList, interfaceInfoMapper.getInterfaceList(dateList),false);
+        Collections.reverse(dateList);
+        objects.add(dateList);
+        objects.add(userList);
+        objects.add(interfaceList);
+        return objects;
+    }
+
+    /**
+     * 封装echarts返回数据
+     * @param dateList
+     * @param list
+     * @return
+     */
+    private static ArrayList<Long> extracted(List<String> dateList, List<EchartsVO> list,boolean isChange) {
+        ArrayList<Long> echartsVos = new ArrayList<>();
+        for (int i=0;i<7;i++){
+            boolean bool=false;
+            //创建内循环 根据查询出已有的数量 循环次数
+            for (int m = 0; m< list.size(); m++){
+                if (!isChange){
+                    EchartsVO echartsVo = list.get(m);
+                    if (dateList.get(i).equals(echartsVo.getDate())){
+                        echartsVos.add(echartsVo.getCount());
+                        bool=true;
+                        break;
+                    }
+                }else {
+                    //处理数据转化问题
+                    String s = JSONUtil.toJsonStr(list.get(m));
+                    EchartsVO echartsVo = JSONUtil.toBean(s, EchartsVO.class);
+                    if (dateList.get(i).equals(echartsVo.getDate())){
+                        echartsVos.add(echartsVo.getCount());
+                        bool=true;
+                        break;
+                    }
+                }
+            }
+            if (!bool) {
+                echartsVos.add(0L);
+            }
+        }
+        Collections.reverse(echartsVos);
+        return echartsVos;
     }
 }
 

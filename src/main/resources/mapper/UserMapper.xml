@@ -32,4 +32,20 @@
     <select id="selectMobileNum" resultType="java.lang.String">
         select mobile from User where mobile = #{mobile} and isDelete = 0
     </select>
+
+    <select id="getUserList" resultType="com.zdzhai.project.model.vo.EchartsVO">
+        SELECT
+        COUNT(*) as count ,
+        DATE_FORMAT(createTime,'%Y-%m-%d') as date
+        FROM `user`
+        WHERE isDelete=0
+        AND DATE_FORMAT(createTime, '%Y-%m-%d') IN
+        <foreach collection="dateList" item="dateList" separator="," open="(" close=")">
+            #{dateList}
+        </foreach>
+        GROUP BY
+        DATE_FORMAT(createTime, '%Y-%m-%d')
+        ORDER BY
+        DATE_FORMAT(createTime, '%Y-%m-%d') DESC;
+    </select>
 </mapper>

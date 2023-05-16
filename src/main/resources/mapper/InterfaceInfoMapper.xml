@@ -27,4 +27,20 @@
         userId,createTime,updateTime,
         isDelete
     </sql>
+
+    <select id="getInterfaceList" resultType="com.zdzhai.project.model.vo.EchartsVO">
+        SELECT
+        COUNT(*) as count ,
+        DATE_FORMAT(updateTime,'%Y-%m-%d') as date
+        FROM `interface_info`
+        WHERE isDelete=0 AND DATE_FORMAT(updateTime, '%Y-%m-%d')
+        IN
+        <foreach collection="dateList" item="dateList" separator="," open="(" close=")">
+            #{dateList}
+        </foreach>
+        GROUP BY
+        DATE_FORMAT(updateTime, '%Y-%m-%d')
+        ORDER BY
+        DATE_FORMAT(updateTime, '%Y-%m-%d') DESC;
+    </select>
 </mapper>

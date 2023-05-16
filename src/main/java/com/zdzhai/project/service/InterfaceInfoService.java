@@ -3,6 +3,10 @@ package com.zdzhai.project.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.zdzhai.apicommon.model.entity.InterfaceInfo;
+import com.zdzhai.project.model.vo.InterfaceInfoLeftNumVO;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
 * @author 62618
@@ -18,4 +22,13 @@ public interface InterfaceInfoService extends IService<InterfaceInfo> {
      * @param add 是否为创建校验
      */
     void validInterfaceInfo(InterfaceInfo interfaceInfo, boolean add);
+
+    /**
+     * 根据 id 获取接口详细信息和用户调用次数
+     * @param id
+     * @param request
+     * @param  response
+     * @return
+     */
+    InterfaceInfoLeftNumVO getInterfaceInfoById(long id, HttpServletRequest request, HttpServletResponse response);
 }

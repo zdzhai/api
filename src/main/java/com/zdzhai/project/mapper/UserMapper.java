@@ -3,7 +3,10 @@ package com.zdzhai.project.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.zdzhai.apicommon.model.entity.User;
+import com.zdzhai.project.model.vo.EchartsVO;
 import org.apache.ibatis.annotations.Param;
+
+import java.util.List;
 
 /**
 * @author 62618
@@ -14,6 +17,8 @@ import org.apache.ibatis.annotations.Param;
 public interface UserMapper extends BaseMapper<User> {
 
     String selectMobileNum(@Param("mobile") String mobile);
+
+    List<EchartsVO> getUserList(@Param("dateList") List<String> dateList);
 }
 
 

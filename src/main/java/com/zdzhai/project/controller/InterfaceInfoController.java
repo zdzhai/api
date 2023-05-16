@@ -19,6 +19,7 @@ import com.zdzhai.project.model.dto.interfaceInfo.InterfaceInfoInvokeRequest;
 import com.zdzhai.project.model.dto.interfaceInfo.InterfaceInfoQueryRequest;
 import com.zdzhai.project.model.dto.interfaceInfo.InterfaceInfoUpdateRequest;
 import com.zdzhai.project.model.enums.InterfaceInfoStatusEnum;
+import com.zdzhai.project.model.vo.InterfaceInfoLeftNumVO;
 import com.zdzhai.project.service.InterfaceInfoService;
 import com.zdzhai.project.service.UserService;
 import com.zdzhai.zdzhaiclientsdk.client.ZdzhaiApiClient;
@@ -150,18 +151,20 @@ public class InterfaceInfoController {
     }
 
     /**
-     * 根据 id 获取
+     * 根据 id 获取接口详细信息和用户调用次数
      *
      * @param id
      * @return
      */
     @GetMapping("/get")
-    public BaseResponse<InterfaceInfo> getInterfaceInfoById(long id) {
+    public BaseResponse<InterfaceInfoLeftNumVO> getInterfaceInfoById(long id,
+                                                                     HttpServletRequest request,
+                                                                     HttpServletResponse response) {
         if (id <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        InterfaceInfo interfaceInfo = interfaceInfoService.getById(id);
-        return ResultUtils.success(interfaceInfo);
+        InterfaceInfoLeftNumVO interfaceInfoLeftNumVO = interfaceInfoService.getInterfaceInfoById(id, request, response);
+        return ResultUtils.success(interfaceInfoLeftNumVO);
     }
 
     /**
@@ -315,6 +318,15 @@ public class InterfaceInfoController {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR);
         }
         return ResultUtils.success(result);
+    }
+
+    /**
+     * 获取全站可调用接口数
+     * @return
+     */
+    @GetMapping("/getInterfaceCount")
+    public BaseResponse getInterfaceCount(){
+        return ResultUtils.success(interfaceInfoService.count(new QueryWrapper<InterfaceInfo>().eq("isDelete",0).eq("status",1)));
     }
     // endregion
 

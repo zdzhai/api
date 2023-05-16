@@ -1,16 +1,28 @@
 package com.zdzhai.project.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zdzhai.apicommon.common.ErrorCode;
+import com.zdzhai.apicommon.common.ResultUtils;
 import com.zdzhai.apicommon.exception.BusinessException;
 import com.zdzhai.apicommon.model.entity.InterfaceInfo;
 
+import com.zdzhai.apicommon.model.entity.User;
+import com.zdzhai.apicommon.model.entity.UserInterfaceInfo;
 import com.zdzhai.project.mapper.InterfaceInfoMapper;
+import com.zdzhai.project.model.vo.InterfaceInfoLeftNumVO;
 import com.zdzhai.project.service.InterfaceInfoService;
 
+import com.zdzhai.project.service.UserInterfaceInfoService;
+import com.zdzhai.project.service.UserService;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.util.Date;
 
 /**
@@ -21,6 +33,12 @@ import java.util.Date;
 @Service
 public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, InterfaceInfo>
         implements InterfaceInfoService {
+
+    @Resource
+    private UserService userService;
+
+    @Resource
+    private UserInterfaceInfoService userInterfaceInfoService;
 
     @Override
     public void validInterfaceInfo(InterfaceInfo interfaceInfo, boolean add) {
@@ -48,6 +66,39 @@ public class InterfaceInfoServiceImpl extends ServiceImpl<InterfaceInfoMapper, I
                 throw new BusinessException(ErrorCode.PARAMS_ERROR);
             }
         }
+    }
+
+    @Override
+    public InterfaceInfoLeftNumVO getInterfaceInfoById(long id,
+                                                       HttpServletRequest request,
+                                                       HttpServletResponse response) {
+        if (id <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        User user = userService.getLoginUser(request, response);
+        if(user == null){
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        Long userId = user.getId();
+        InterfaceInfo interfaceInfo = this.getById(id);
+        InterfaceInfoLeftNumVO interfaceInfoLeftNumVO = new InterfaceInfoLeftNumVO();
+        BeanUtils.copyProperties(interfaceInfo,interfaceInfoLeftNumVO);
+        UserInterfaceInfo one = userInterfaceInfoService
+                .getOne(new QueryWrapper<UserInterfaceInfo>()
+                        .eq("userId", userId).eq("interfaceInfoId", id));
+        if (null == one){
+            //请求数据不存在时，创建一个新的，并将调用次数设置为0
+            UserInterfaceInfo userInterfaceInfo = new UserInterfaceInfo();
+            userInterfaceInfo.setUserId(userId);
+            userInterfaceInfo.setInterfaceInfoId(id);
+            userInterfaceInfo.setTotalNum(0L);
+            userInterfaceInfo.setLeftNum(20L);
+            userInterfaceInfoService.save(userInterfaceInfo);
+            interfaceInfoLeftNumVO.setLeftNum(20L);
+        }else {
+            interfaceInfoLeftNumVO.setLeftNum(one.getLeftNum());
+        }
+        return interfaceInfoLeftNumVO;
     }
 }
 
