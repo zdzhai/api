@@ -1,7 +1,7 @@
 package com.zdzhai.project.interceptor;
 
 import com.zdzhai.project.annotation.AccessLimit;
-import com.zdzhai.project.utils.IpUtils;
+import com.zdzhai.project.common.IpUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;

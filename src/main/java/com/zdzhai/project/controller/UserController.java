@@ -8,6 +8,7 @@ import com.zdzhai.apicommon.common.ErrorCode;
 import com.zdzhai.apicommon.common.ResultUtils;
 import com.zdzhai.apicommon.exception.BusinessException;
 import com.zdzhai.apicommon.model.entity.User;
+import com.zdzhai.apicommon.model.entity.thirdparty.Oauth2LoginTo;
 import com.zdzhai.project.model.dto.user.*;
 
 import com.zdzhai.project.common.DeleteRequest;

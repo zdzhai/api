@@ -1,4 +1,4 @@
-package com.zdzhai.project.utils;
+package com.zdzhai.project.common;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StringUtils;

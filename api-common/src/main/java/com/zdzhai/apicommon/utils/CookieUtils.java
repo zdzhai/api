@@ -1,8 +1,9 @@
-package com.zdzhai.project.common;
+package com.zdzhai.apicommon.utils;
 
 import cn.hutool.core.util.CharsetUtil;
 import cn.hutool.crypto.symmetric.SymmetricAlgorithm;
 import cn.hutool.crypto.symmetric.SymmetricCrypto;
+import com.zdzhai.apicommon.common.CookieConstant;
 
 /**
  * cookie操作相关工具

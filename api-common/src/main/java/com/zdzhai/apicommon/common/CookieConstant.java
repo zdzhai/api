@@ -1,4 +1,4 @@
-package com.zdzhai.project.common;
+package com.zdzhai.apicommon.common;
 
 /**
  * @author dongdong

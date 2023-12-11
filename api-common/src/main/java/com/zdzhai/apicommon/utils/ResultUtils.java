@@ -1,5 +1,6 @@
-package com.zdzhai.apicommon.common;
+package com.zdzhai.apicommon.utils;
 
+import com.zdzhai.apicommon.common.*;
 /**
  * 返回工具类
  *

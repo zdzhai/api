@@ -15,12 +15,14 @@ import cn.hutool.jwt.JWTUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zdzhai.apicommon.common.BaseResponse;
+import com.zdzhai.apicommon.common.CookieConstant;
 import com.zdzhai.apicommon.common.ErrorCode;
 import com.zdzhai.apicommon.common.ResultUtils;
 import com.zdzhai.apicommon.exception.BusinessException;
 import com.zdzhai.apicommon.model.entity.User;
+import com.zdzhai.apicommon.model.entity.thirdparty.Oauth2LoginTo;
+import com.zdzhai.apicommon.utils.CookieUtils;
 import com.zdzhai.project.common.*;
-
 import com.zdzhai.project.mapper.InterfaceInfoMapper;
 import com.zdzhai.project.mapper.UserMapper;
 import com.zdzhai.project.model.dto.SmsDTO;
@@ -29,6 +31,7 @@ import com.zdzhai.project.model.vo.AkVO;
 import com.zdzhai.project.model.vo.EchartsVO;
 import com.zdzhai.project.model.vo.LoginUserVO;
 import com.zdzhai.project.service.UserService;
+import com.zdzhai.project.thirdparty.ThirdParty2LoginContext;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateUtils;
@@ -70,10 +73,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Resource
     SmsLimiter smsLimiter;
 
-    /**
-     * 盐值，混淆密码
-     */
-    private static final String SALT = "zhai";
 
     @Override
     public long userRegister(UserRegisterRequest userRegisterRequest,
@@ -254,7 +253,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         String sId = strings[0];
         String sUserAccount = strings[1];
         Map<Object, Object> userMap = stringRedisTemplate.opsForHash().entries(API_USER_ID + sId);
-        if (userMap != null){
+        if (userMap != null && userMap.size() != 0){
             User user = BeanUtil.mapToBean(userMap, User.class, true, CopyOptions.create()
                     .setIgnoreNullValue(true)
                     .setFieldValueEditor((fieldName, fieldValue) -> fieldValue.toString()));
@@ -450,6 +449,42 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         objects.add(userList);
         objects.add(interfaceList);
         return objects;
+    }
+
+    /**
+     * 通过第三方登录
+     * @param oauth2LoginTo
+     * @return
+     */
+    @Override
+    public BaseResponse oauth2Login(Oauth2LoginTo oauth2LoginTo) {
+        String accessToken = oauth2LoginTo.getAccess_token();
+        if (null == accessToken){
+            return ResultUtils.error(ErrorCode.PARAMS_ERROR);
+        }
+
+        ThirdParty2LoginContext thirdParty2LoginContext = new ThirdParty2LoginContext(oauth2LoginTo.getThird_party_name());
+        BaseResponse baseResponse = thirdParty2LoginContext.getResponse(oauth2LoginTo);
+        //todo 这里就是通过使用策略模式把所有第三方登录抽象出来，方便扩展
+        //todo 而不使用if else直接在代码中对第三方登录类型做判断
+        /*LoginUserVo loginUserVo = null;
+        if ("gitee".equals(type)){
+            HttpResponse response = HttpRequest.get("https://gitee.com/api/v5/user?access_token=" + accessToken).execute();
+            loginUserVo = oauth2LoginUtils.giteeOrGithubOauth2Login(response);
+        }else {
+            HttpResponse userInfo = HttpRequest.get("https://api.github.com/user")
+                    .header("Authorization","Bearer "+accessToken)
+                    .timeout(20000)
+                    //超时，毫秒
+                    .execute();
+            loginUserVo = oauth2LoginUtils.giteeOrGithubOauth2Login(userInfo);
+        }*/
+        return baseResponse;
+    }
+
+    @Override
+    public User selectOne(String userAccount) {
+        return userMapper.selectOne(new QueryWrapper<User>().eq("userAccount", userAccount));
     }
 
     /**

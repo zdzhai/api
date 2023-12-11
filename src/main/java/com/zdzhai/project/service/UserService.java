@@ -6,6 +6,7 @@ package com.zdzhai.project.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.zdzhai.apicommon.common.BaseResponse;
 import com.zdzhai.apicommon.model.entity.User;
+import com.zdzhai.apicommon.model.entity.thirdparty.Oauth2LoginTo;
 import com.zdzhai.project.model.dto.user.UserRegisterRequest;
 import com.zdzhai.project.model.vo.AkVO;
 import com.zdzhai.project.model.vo.LoginUserVO;
@@ -99,4 +100,13 @@ public interface UserService extends IService<User> {
      * @return
      */
     List<Object> getEchartsData();
+
+    /**
+     * 通过第三方登录
+     * @param oauth2ResTo
+     * @return
+     */
+    BaseResponse oauth2Login(Oauth2LoginTo oauth2ResTo);
+
+    User selectOne(String userAccount);
 }

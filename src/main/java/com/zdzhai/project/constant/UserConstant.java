@@ -8,6 +8,11 @@ package com.zdzhai.project.constant;
 public interface UserConstant {
 
     /**
+     * 盐值，混淆密码
+     */
+    String SALT = "zhai";
+
+    /**
      * 用户登录态键
      */
     String USER_LOGIN_STATE = "userLoginState";
