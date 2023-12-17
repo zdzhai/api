@@ -32,7 +32,8 @@ public class WebConfig implements WebMvcConfigurer {
             "/user/messageCaptcha","/v3/api-docs",
             "/user/logoutSuccess","/user/getpassusertype",
             "/user/sendPassUserCode","/user/authPassUserCode",
-            "/user/updateUserPass", "/user/oauth2/login");
+            "/user/updateUserPass", "/user/oauth2/login",
+            "/charging/**");
 
     /**
      * 放行静态资源

@@ -1,7 +1,12 @@
 package com.zdzhai.project.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.zdzhai.apicommon.common.BaseResponse;
 import com.zdzhai.apicommon.model.entity.UserInterfaceInfo;
+import com.zdzhai.project.model.vo.UserInterfaceLeftNumVO;
+
+import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 /**
 * @author 62618
@@ -33,4 +38,11 @@ public interface UserInterfaceInfoService extends IService<UserInterfaceInfo> {
      * @return
      */
     boolean createUserInterfaceInfo(long interfaceInfoId, long userId);
+
+    /**
+     * 获取当前登录用户的接口剩余调用次数
+     * @param loginUserId
+     * @return
+     */
+    List<UserInterfaceLeftNumVO> getUserInterfaceLeftNum(Long loginUserId);
 }

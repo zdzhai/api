@@ -28,4 +28,11 @@
         order by num desc
         limit #{limit}
     </select>
+
+    <select id="getUserInterfaceLeftNum" resultType="com.zdzhai.project.model.vo.UserInterfaceLeftNumVO">
+        SELECT i.id,i.name,i.description,i.url,i.method,u.leftNum ,c.charging,c.availableCounts FROM interface_info i
+        LEFT JOIN user_interface_info u ON i.id = u.interfaceInfoId
+        LEFT JOIN interface_charging c ON i.id = c.interfaceid
+        WHERE i.isDelete=0 AND i.status = 1 AND u.userId =#{id}
+    </select>
 </mapper>

@@ -12,6 +12,7 @@ import com.zdzhai.apicommon.model.entity.UserInterfaceInfo;
 import com.zdzhai.project.common.DeleteRequest;
 
 
+import com.zdzhai.project.model.vo.UserInterfaceLeftNumVO;
 import com.zdzhai.project.service.UserInterfaceInfoService;
 import com.zdzhai.project.annotation.AuthCheck;
 import com.zdzhai.project.constant.CommonConstant;
@@ -203,4 +204,16 @@ public class UserInterfaceInfoController {
     }
     // endregion
 
+    /**
+     * 获取当前登录用户的接口剩余调用次数
+     * @param request
+     * @return
+     */
+    @GetMapping("/getUserInterfaceLeftNum")
+    public BaseResponse<List<UserInterfaceLeftNumVO>> getUserInterfaceLeftNum(HttpServletRequest request, HttpServletResponse response){
+        User loginUser = userService.getLoginUser(request, response);
+        Long loginUserId = loginUser.getId();
+        List<UserInterfaceLeftNumVO> userInterfaceLeftNumVOList = userInterfaceInfoService.getUserInterfaceLeftNum(loginUserId);
+        return ResultUtils.success(userInterfaceLeftNumVOList);
+    }
 }

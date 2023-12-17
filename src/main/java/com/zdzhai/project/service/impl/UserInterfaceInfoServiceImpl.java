@@ -7,15 +7,16 @@ import com.zdzhai.apicommon.common.ErrorCode;
 import com.zdzhai.apicommon.exception.BusinessException;
 import com.zdzhai.apicommon.model.entity.UserInterfaceInfo;
 import com.zdzhai.project.mapper.UserInterfaceInfoMapper;
+import com.zdzhai.project.model.vo.UserInterfaceLeftNumVO;
 import com.zdzhai.project.service.UserInterfaceInfoService;
-
-
 import org.springframework.aop.framework.AopContext;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.annotation.Resource;
 import java.util.Date;
+import java.util.List;
 
 /**
  * @author 62618
@@ -26,6 +27,9 @@ import java.util.Date;
 @EnableAspectJAutoProxy(exposeProxy = true,proxyTargetClass = true)
 public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoMapper, UserInterfaceInfo>
         implements UserInterfaceInfoService {
+
+    @Resource
+    private UserInterfaceInfoMapper userInterfaceInfoMapper;
 
     @Override
     public void validUserInterfaceInfo(UserInterfaceInfo userInterfaceInfo, boolean add) {
@@ -101,6 +105,17 @@ public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoM
         updateWrapper.eq("interfaceInfoId", interfaceInfoId);
         updateWrapper.setSql("leftNum = leftNum - 1,totalNum = totalNum + 1");
         return this.update(updateWrapper);
+    }
+
+    /**
+     * 获取当前登录用户的接口剩余调用次数
+     * @param loginUserId
+     * @return
+     */
+    @Override
+    public List<UserInterfaceLeftNumVO> getUserInterfaceLeftNum(Long loginUserId) {
+        List<UserInterfaceLeftNumVO>  userInterfaceLeftNumVo =  userInterfaceInfoMapper.getUserInterfaceLeftNum(loginUserId);
+        return userInterfaceLeftNumVo;
     }
 }
 

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zdzhai.project.mapper.InterfaceChargingMapper">
+
+    <resultMap id="BaseResultMap" type="com.zdzhai.project.model.entity.InterfaceCharging">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="interfaceId" column="interfaceId" jdbcType="BIGINT"/>
+            <result property="charging" column="charging" jdbcType="SMALLINT"/>
+            <result property="availableCounts" column="availableCounts" jdbcType="VARCHAR"/>
+            <result property="userId" column="userId" jdbcType="BIGINT"/>
+            <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+            <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,interfaceId,charging,
+        availableCounts,userId,createTime,
+        updateTime,isDelete
+    </sql>
+
+    <select id="selectOnlinePage" resultType="com.zdzhai.project.model.vo.InterfaceChargingVO">
+        SELECT
+        i.id,i.name, ch.charging, ch.availableCounts    ,i.description,i.url,i.requestParams,i.requestHeader,i.responseHeader,i.status,i.method,i.userId,i.createTime,i.updateTime,i.isDelete
+        FROM interface_info i
+        LEFT JOIN interface_charging ch ON i.id=ch.interfaceId
+        where i.isDelete=0 and i.status=1
+    </select>
+</mapper>
