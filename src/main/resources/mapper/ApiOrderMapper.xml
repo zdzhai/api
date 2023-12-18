@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zdzhai.project.mapper.ApiOrderMapper">
+
+    <resultMap id="BaseResultMap" type="com.zdzhai.project.model.entity.ApiOrder">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="interfaceId" column="interfaceId" jdbcType="BIGINT"/>
+            <result property="userId" column="userId" jdbcType="BIGINT"/>
+            <result property="orderSn" column="orderSn" jdbcType="VARCHAR"/>
+            <result property="orderNum" column="orderNum" jdbcType="BIGINT"/>
+            <result property="charging" column="charging" jdbcType="FLOAT"/>
+            <result property="totalAmount" column="totalAmount" jdbcType="FLOAT"/>
+            <result property="status" column="status" jdbcType="INTEGER"/>
+            <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+            <result property="isDelete" column="isDelete" jdbcType="TINYINT"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,interfaceId,userId,
+        orderSn,orderNum,charging,
+        totalAmount,status,createTime,
+        updateTime,isDelete
+    </sql>
+</mapper>

@@ -43,6 +43,11 @@ public class UserInterfaceInfoUpdateRequest implements Serializable {
     private Long leftNum;
 
     /**
+     * 购买数量
+     */
+    private Long orderNum;
+
+    /**
      * （0-正常，1-禁用）
      */
     private Integer status;

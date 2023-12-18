@@ -151,7 +151,7 @@ public class InterfaceInfoController {
     }
 
     /**
-     * 根据 id 获取接口详细信息和用户调用次数
+     * 根据 接口id 获取接口详细信息和用户调用次数
      *
      * @param id
      * @return

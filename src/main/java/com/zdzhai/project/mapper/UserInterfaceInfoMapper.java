@@ -2,6 +2,7 @@ package com.zdzhai.project.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.zdzhai.apicommon.model.entity.UserInterfaceInfo;
+import com.zdzhai.project.model.dto.userinterfaceinfo.UserInterfaceInfoUpdateRequest;
 import com.zdzhai.project.model.vo.UserInterfaceInfoVO;
 import com.zdzhai.project.model.vo.UserInterfaceLeftNumVO;
 import org.apache.ibatis.annotations.Param;
@@ -35,6 +36,13 @@ public interface UserInterfaceInfoMapper extends BaseMapper<UserInterfaceInfo> {
      * @return
      */
     List<UserInterfaceLeftNumVO> getUserInterfaceLeftNum(@Param("id") Long loginUserId);
+
+    /**
+     * 用户订购后，更新用户接口的接口剩余数量
+     * @param userInterfaceInfoUpdateRequest
+     * @return
+     */
+    int updateUserInterfaceInfoLeftNum(UserInterfaceInfoUpdateRequest userInterfaceInfoUpdateRequest);
 }
 
 

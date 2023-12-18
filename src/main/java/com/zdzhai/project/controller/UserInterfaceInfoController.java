@@ -122,22 +122,7 @@ public class UserInterfaceInfoController {
         if (userInterfaceInfoUpdateRequest == null || userInterfaceInfoUpdateRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        UserInterfaceInfo userInterfaceInfo = new UserInterfaceInfo();
-        BeanUtils.copyProperties(userInterfaceInfoUpdateRequest, userInterfaceInfo);
-        // 参数校验
-        userInterfaceInfoService.validUserInterfaceInfo(userInterfaceInfo, false);
-        User user = userService.getLoginUser(request,response);
-        long id = userInterfaceInfoUpdateRequest.getId();
-        // 判断是否存在
-        UserInterfaceInfo oldUserInterfaceInfo = userInterfaceInfoService.getById(id);
-        if (oldUserInterfaceInfo == null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
-        }
-        // 仅本人或管理员可修改
-        if (!oldUserInterfaceInfo.getUserId().equals(user.getId()) && !userService.isAdmin(request,response)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
-        boolean result = userInterfaceInfoService.updateById(userInterfaceInfo);
+        boolean result = userInterfaceInfoService.updateUserInterfaceInfo(userInterfaceInfoUpdateRequest,request, response);
         return ResultUtils.success(result);
     }
 

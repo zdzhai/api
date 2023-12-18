@@ -3,9 +3,12 @@ package com.zdzhai.project.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.zdzhai.apicommon.common.BaseResponse;
 import com.zdzhai.apicommon.model.entity.UserInterfaceInfo;
+import com.zdzhai.project.model.dto.userinterfaceinfo.UserInterfaceInfoUpdateRequest;
 import com.zdzhai.project.model.vo.UserInterfaceLeftNumVO;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
 /**
@@ -24,7 +27,18 @@ public interface UserInterfaceInfoService extends IService<UserInterfaceInfo> {
     void validUserInterfaceInfo(UserInterfaceInfo userInterfaceInfo, boolean add);
 
     /**
-     * 条用接口次数统计
+     * 更新用户接口关系数据
+     * @param userInterfaceInfoUpdateRequest
+     * @param request
+     * @param response
+     * @return
+     */
+    boolean updateUserInterfaceInfo(UserInterfaceInfoUpdateRequest userInterfaceInfoUpdateRequest,
+                                    HttpServletRequest request,
+                                    HttpServletResponse response);
+
+    /**
+     * 调用接口次数统计
      * @param interfaceInfoId
      * @param userId
      * @return

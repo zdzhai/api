@@ -21,6 +21,14 @@
         totalNum,leftNum,status,
         createTime,updateTime,isDelete
     </sql>
+    <update id="updateUserInterfaceInfoLeftNum"
+        parameterType="com.zdzhai.project.model.dto.userinterfaceinfo.UserInterfaceInfoUpdateRequest">
+        update user_interface_info uii
+        set uii.leftNum = uii.leftNum + #{orderNum}
+        where uii.isDelete=0 AND uii.status = 0
+        AND uii.userId = #{userId} AND uii.interfaceInfoId = #{interfaceInfoId}
+    </update>
+
     <select id="listTopInvokeInterfaceInfo" resultType="com.zdzhai.project.model.vo.UserInterfaceInfoVO">
         select interfaceInfoId, sum(totalNum) as num
         from user_interface_info

@@ -5,17 +5,22 @@ import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zdzhai.apicommon.common.ErrorCode;
 import com.zdzhai.apicommon.exception.BusinessException;
+import com.zdzhai.apicommon.model.entity.User;
 import com.zdzhai.apicommon.model.entity.UserInterfaceInfo;
 import com.zdzhai.project.mapper.UserInterfaceInfoMapper;
+import com.zdzhai.project.model.dto.userinterfaceinfo.UserInterfaceInfoUpdateRequest;
 import com.zdzhai.project.model.vo.UserInterfaceLeftNumVO;
 import com.zdzhai.project.service.UserInterfaceInfoService;
+import com.zdzhai.project.service.UserService;
 import org.springframework.aop.framework.AopContext;
+import org.springframework.beans.BeanUtils;
 import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import java.util.Date;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.util.List;
 
 /**
@@ -31,6 +36,9 @@ public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoM
     @Resource
     private UserInterfaceInfoMapper userInterfaceInfoMapper;
 
+    @Resource
+    private UserService userService;
+
     @Override
     public void validUserInterfaceInfo(UserInterfaceInfo userInterfaceInfo, boolean add) {
         if (userInterfaceInfo == null) {
@@ -39,13 +47,7 @@ public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoM
 
         Long id = userInterfaceInfo.getId();
         Long userId = userInterfaceInfo.getUserId();
-        Long interfaceInfoId = userInterfaceInfo.getInterfaceInfoId();
-        Long totalNum = userInterfaceInfo.getTotalNum();
         Long leftNum = userInterfaceInfo.getLeftNum();
-        Integer status = userInterfaceInfo.getStatus();
-        Date createTime = userInterfaceInfo.getCreateTime();
-        Date updateTime = userInterfaceInfo.getUpdateTime();
-        Integer isDelete = userInterfaceInfo.getIsDelete();
 
         // 创建时，所有参数必须非空
         if (add) {
@@ -56,6 +58,28 @@ public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoM
         if (leftNum < 0){
             throw new BusinessException(ErrorCode.PARAMS_ERROR,"剩余次数不能小于0");
         }
+    }
+
+    @Override
+    public boolean updateUserInterfaceInfo(UserInterfaceInfoUpdateRequest userInterfaceInfoUpdateRequest,
+                                           HttpServletRequest request,
+                                           HttpServletResponse response) {
+        UserInterfaceInfo userInterfaceInfo = new UserInterfaceInfo();
+        BeanUtils.copyProperties(userInterfaceInfoUpdateRequest, userInterfaceInfo);
+        // 参数校验
+        User user = userService.getLoginUser(request,response);
+        long interfaceInfoId = userInterfaceInfoUpdateRequest.getInterfaceInfoId();
+        // 判断接口是否存在
+        UserInterfaceInfo dbUserInterfaceInfo = this.getById(interfaceInfoId);
+        if (dbUserInterfaceInfo == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        // 仅本人或管理员可修改
+        if (!dbUserInterfaceInfo.getUserId().equals(user.getId()) && !userService.isAdmin(request,response)) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+        }
+        int updateRow = userInterfaceInfoMapper.updateUserInterfaceInfoLeftNum(userInterfaceInfoUpdateRequest);
+        return updateRow != 0;
     }
 
     @Override
