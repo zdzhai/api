@@ -6,7 +6,7 @@ import java.io.Serializable;
 import java.util.Date;
 
 /**
- * @author YukeSeko
+ * @author dongdong
  */
 @Data
 public class OrderSnVO implements Serializable {

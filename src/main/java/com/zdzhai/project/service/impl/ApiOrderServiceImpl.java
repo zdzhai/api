@@ -3,9 +3,10 @@ package com.zdzhai.project.service.impl;
 import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
-import cn.hutool.core.lang.Snowflake;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.RandomUtil;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zdzhai.apicommon.common.CookieConstant;
@@ -25,8 +26,6 @@ import com.zdzhai.project.service.InterfaceInfoService;
 import com.zdzhai.project.service.UserInterfaceInfoService;
 import com.zdzhai.project.service.UserService;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
@@ -176,8 +175,33 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
     }
 
     @Override
-    public boolean cancelOrderSn(ApiOrderCancelRequest apiOrderCancelRequest, HttpServletRequest request, HttpServletResponse response) {
-        return false;
+    @Transactional
+    public String cancelOrderSn(ApiOrderCancelRequest apiOrderCancelRequest,
+                                 HttpServletRequest request,
+                                 HttpServletResponse response) {
+        Long orderNum = apiOrderCancelRequest.getOrderNum();
+        String orderSn = apiOrderCancelRequest.getOrderSn();
+        //订单已经被取消的情况
+        ApiOrder orderSn1 = this.getOne(new QueryWrapper<ApiOrder>().eq("orderSn", orderSn));
+        if (orderSn1.getStatus() == 2) {
+            return "取消订单成功";
+        }
+        //更新订单表状态
+        this.update(new UpdateWrapper<ApiOrder>().eq("orderSn", orderSn).set("status",2));
+        //减少接口余量
+        User loginUser = userService.getLoginUser(request,response);
+        if (null == loginUser){
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        UserInterfaceInfoUpdateRequest userInterfaceInfoUpdateRequest = new UserInterfaceInfoUpdateRequest();
+        userInterfaceInfoUpdateRequest.setOrderNum(orderNum * -1);
+        userInterfaceInfoUpdateRequest.setInterfaceInfoId(apiOrderCancelRequest.getInterfaceId());
+        userInterfaceInfoUpdateRequest.setUserId(loginUser.getId());
+        boolean updateUserInterfaceInfo = userInterfaceInfoService.updateUserInterfaceInfo(userInterfaceInfoUpdateRequest, request, response);
+        if (!updateUserInterfaceInfo) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,"取消订单失败");
+        }
+        return "取消订单成功";
     }
 
     /**

@@ -19,7 +19,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.util.concurrent.ExecutionException;
 
 /**
- * @author YukeSeko
+ * @author dongdong
  */
 @RestController
 @Api("订单接口")
@@ -50,7 +50,9 @@ public class OrderController {
      * @return
      */
     @PostMapping("/generateOrderSn")
-    public BaseResponse<OrderSnVO> generateOrderSn(ApiOrderAddRequest apiOrderAddRequest, HttpServletRequest request, HttpServletResponse response) throws ExecutionException, InterruptedException {
+    public BaseResponse<OrderSnVO> generateOrderSn(ApiOrderAddRequest apiOrderAddRequest,
+                                                   HttpServletRequest request,
+                                                   HttpServletResponse response) throws ExecutionException, InterruptedException {
         OrderSnVO orderSnVO = apiOrderService.generateOrderSn(apiOrderAddRequest, request, response);
         return ResultUtils.success(orderSnVO);
     }
@@ -63,8 +65,10 @@ public class OrderController {
      * @return
      */
     @PostMapping("/cancelOrderSn")
-    public BaseResponse<String> cancelOrderSn(ApiOrderCancelRequest apiOrderCancelRequest, HttpServletRequest request, HttpServletResponse response) {
-        apiOrderService.cancelOrderSn(apiOrderCancelRequest,request,response);
+    public BaseResponse<String> cancelOrderSn(ApiOrderCancelRequest apiOrderCancelRequest,
+                                              HttpServletRequest request,
+                                              HttpServletResponse response) {
+        String ans = apiOrderService.cancelOrderSn(apiOrderCancelRequest,request,response);
         return ResultUtils.success("取消订单成功");
     }
 

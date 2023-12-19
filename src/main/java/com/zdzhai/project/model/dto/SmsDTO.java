@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import java.io.Serializable;
 
 /**
- * @author YukeSeko
+ * @author dongdong
  * 发送手机号对象
  */
 @Data

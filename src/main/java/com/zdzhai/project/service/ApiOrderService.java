@@ -44,5 +44,5 @@ public interface ApiOrderService extends IService<ApiOrder> {
      * @param response
      * @return
      */
-    boolean cancelOrderSn(ApiOrderCancelRequest apiOrderCancelRequest, HttpServletRequest request, HttpServletResponse response);
+    String cancelOrderSn(ApiOrderCancelRequest apiOrderCancelRequest, HttpServletRequest request, HttpServletResponse response);
 }

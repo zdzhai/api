@@ -6,7 +6,7 @@ import java.io.Serializable;
 
 /**
  * 用户接口剩余调用次数vo
- * @author YukeSeko
+ * @author dongdong
  */
 @Data
 public class UserInterfaceLeftNumVO implements Serializable {

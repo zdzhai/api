@@ -5,7 +5,7 @@ import lombok.Data;
 import java.io.Serializable;
 
 /**
- * @author YukeSeko
+ * @author dongdong
  */
 @Data
 public class OrderInterfaceInfoVO implements Serializable {

@@ -6,7 +6,7 @@ import java.io.Serializable;
 
 /**
  * echarts需要返回的数据
- * @author YukeSeko
+ * @author dongdong
  */
 @Data
 public class EchartsVO implements Serializable {
