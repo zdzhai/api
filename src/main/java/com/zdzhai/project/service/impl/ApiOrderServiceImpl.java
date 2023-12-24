@@ -9,8 +9,10 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.google.gson.Gson;
 import com.zdzhai.apicommon.common.CookieConstant;
 import com.zdzhai.apicommon.common.ErrorCode;
+import com.zdzhai.apicommon.constant.OrderInfoConstant;
 import com.zdzhai.apicommon.exception.BusinessException;
 import com.zdzhai.apicommon.model.entity.InterfaceInfo;
 import com.zdzhai.apicommon.model.entity.User;
@@ -25,7 +27,11 @@ import com.zdzhai.project.service.ApiOrderService;
 import com.zdzhai.project.service.InterfaceInfoService;
 import com.zdzhai.project.service.UserInterfaceInfoService;
 import com.zdzhai.project.service.UserService;
+import com.zdzhai.project.utils.RocketMQUtil;
+import org.apache.rocketmq.client.producer.DefaultMQProducer;
+import org.apache.rocketmq.common.message.Message;
 import org.springframework.beans.BeanUtils;
+import org.springframework.context.ApplicationContext;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
@@ -64,6 +70,9 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
     @Resource
     private InterfaceInfoService interfaceInfoService;
 
+    @Resource
+    private ApplicationContext APPLICATION_CONTEXT;
+
     /**
      * 生成防重令牌：保证创建订单的接口幂等性
      * @param request
@@ -95,7 +104,10 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
      */
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public OrderSnVO generateOrderSn(@RequestBody ApiOrderAddRequest apiOrderAddRequest, HttpServletRequest request, HttpServletResponse response) throws ExecutionException, InterruptedException {
+    public OrderSnVO generateOrderSn(@RequestBody ApiOrderAddRequest apiOrderAddRequest,
+                                     HttpServletRequest request,
+                                     HttpServletResponse response)
+            throws ExecutionException, InterruptedException {
         //1、远程获取当前登录用户
         User loginUser = userService.getLoginUser(request,response);
         if (null == loginUser){
@@ -135,7 +147,7 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
             throw new BusinessException(ErrorCode.OPERATION_ERROR,"提交太快了，请重新提交");
         }
 
-        //5、使用雪花算法生成订单id，并保存订单
+        //5、todo 使用雪花算法生成订单id，并保存订单
         String orderSn = generateOrderSn(loginUser.getId().toString());
         ApiOrder apiOrder = new ApiOrder();
         apiOrder.setTotalAmount(totalAmount);
@@ -147,11 +159,11 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
         apiOrder.setCharging(charging);
         try {
             apiOrderMapper.insert(apiOrder);
-        }catch (Exception e){
+        }catch (Exception e) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR,"订单保存失败");
         }
 
-        //6、更新剩余可调用接口数量
+        //todo 是否应该在订单完成后再做接口数量的增加操作 6、更新剩余可调用接口数量
         UserInterfaceInfoUpdateRequest userInterfaceInfoUpdateRequest = new UserInterfaceInfoUpdateRequest();
         userInterfaceInfoUpdateRequest.setOrderNum(orderNum);
         userInterfaceInfoUpdateRequest.setInterfaceInfoId(interfaceId);
@@ -160,8 +172,21 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
         if (!updateUserInterfaceInfo) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR,"库存更新失败");
         }
-        //7、todo 全部完成后，向mq延时队列发送订单消息，且30分钟过期
+        //7、全部完成后，向mq延时队列发送延迟订单消息，且30分钟过期
         //等待异步任务完成
+        try {
+            DefaultMQProducer orderInfoProducer = (DefaultMQProducer) APPLICATION_CONTEXT.getBean("MQProducer");
+            Gson gson = new Gson();
+            Message msg = new Message();
+            msg.setTopic(OrderInfoConstant.TOPIC_ORDERS);
+            msg.setBody(gson.toJson(apiOrder).getBytes());
+            msg.setDelayTimeLevel(16);
+            RocketMQUtil.asyncSendMsg(orderInfoProducer, msg);
+            System.out.println("时间:"+ System.currentTimeMillis()+";延迟下单消息生产者发送一条信息，内容:{"+apiOrder.getOrderSn()+"}");
+        } catch (Exception e) {
+            System.out.println(("订单接收异常"));
+            e.printStackTrace();
+        }
 
         //8、构建返回给前端页面的数据
         OrderSnVO orderSnVO = new OrderSnVO();
@@ -204,12 +229,23 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
         return "取消订单成功";
     }
 
+    @Override
+    public int updateApiOrderStatusByOrderSn(String orderSn, int status) {
+        return apiOrderMapper.updateApiOrderStatusByOrderSn(orderSn, status);
+    }
+
+    @Override
+    public ApiOrder getApiOrderByOrderSn(String orderSn) {
+        return apiOrderMapper.getApiOrderByOrderSn(orderSn);
+    }
+
     /**
      * 生成订单号
      * @return
      */
-    private String generateOrderSn(String userId){
-        //todo 按照黑马点评的订单号生成方法
+    private String generateOrderSn(String userId) {
+        //todo 按照黑马点评的订单号生成方法,高并发下有可能造成订单号重复
+        //todo 分布式数据库中也有可能造成订单号重复
         String timeId = IdWorker.getTimeId();
         String substring = timeId.substring(0, timeId.length() - 15);
         return substring + RandomUtil.randomNumbers(10) + userId.toString();

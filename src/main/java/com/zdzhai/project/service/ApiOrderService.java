@@ -45,4 +45,19 @@ public interface ApiOrderService extends IService<ApiOrder> {
      * @return
      */
     String cancelOrderSn(ApiOrderCancelRequest apiOrderCancelRequest, HttpServletRequest request, HttpServletResponse response);
+
+    /**
+     * 根据订单号修改订单状态
+     * @param orderSn
+     * @param status
+     * @return
+     */
+    int updateApiOrderStatusByOrderSn(String orderSn, int status);
+
+    /**
+     * 根据订单号查找订单信息
+     * @param orderSn
+     * @return
+     */
+    ApiOrder getApiOrderByOrderSn(String orderSn);
 }

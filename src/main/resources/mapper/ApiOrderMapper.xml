@@ -24,4 +24,15 @@
         totalAmount,status,createTime,
         updateTime,isDelete
     </sql>
+    <update id="updateApiOrderStatusByOrderSn">
+        update api_order
+            set status = #{status}
+        where orderSn = #{orderSn}
+    </update>
+
+    <select id="getApiOrderByOrderSn" resultType="com.zdzhai.project.model.entity.ApiOrder">
+        select *
+        from api_order
+        where orderSn = #{orderSn}
+    </select>
 </mapper>

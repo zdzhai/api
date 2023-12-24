@@ -11,6 +11,20 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 */
 public interface ApiOrderMapper extends BaseMapper<ApiOrder> {
 
+    /**
+     * 根据订单号修改订单状态
+     * @param orderSn
+     * @param status
+     * @return
+     */
+    int updateApiOrderStatusByOrderSn(String orderSn, int status);
+
+    /**
+     * 根据订单号查找订单信息
+     * @param orderSn
+     * @return
+     */
+    ApiOrder getApiOrderByOrderSn(String orderSn);
 }
 
 
