@@ -1,6 +1,11 @@
 package com.zdzhai.apicommon.service;
 
 
+import com.zdzhai.apicommon.model.dto.UserInterfaceInfoUpdateRequest;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 /**
 * @author 62618
 * @description 针对表【user_interface_info(用户调用接口信息表)】的数据库操作Service
@@ -8,11 +13,22 @@ package com.zdzhai.apicommon.service;
 */
 public interface InnerUserInterfaceInfoService {
 
-    /** 
+    /**
      * 条用接口次数统计
      * @param interfaceInfoId
      * @param userId
      * @return
      */
     boolean invokeCount(long interfaceInfoId, long userId);
+
+    /**
+     * 更新用户接口关系数据
+     * @param userInterfaceInfoUpdateRequest
+     * @param request
+     * @param response
+     * @return
+     */
+    boolean updateUserInterfaceInfo(UserInterfaceInfoUpdateRequest userInterfaceInfoUpdateRequest,
+                                    HttpServletRequest request,
+                                    HttpServletResponse response);
 }

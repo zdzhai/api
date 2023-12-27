@@ -4,19 +4,15 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zdzhai.apicommon.common.BaseResponse;
 import com.zdzhai.apicommon.common.ErrorCode;
-import com.zdzhai.apicommon.common.ResultUtils;
 import com.zdzhai.apicommon.exception.BusinessException;
 import com.zdzhai.apicommon.model.entity.User;
+import com.zdzhai.apicommon.utils.ResultUtils;
 import com.zdzhai.project.annotation.AuthCheck;
+import com.zdzhai.project.common.DeleteRequest;
+import com.zdzhai.project.constant.CommonConstant;
 import com.zdzhai.project.model.dto.post.PostAddRequest;
 import com.zdzhai.project.model.dto.post.PostQueryRequest;
 import com.zdzhai.project.model.dto.post.PostUpdateRequest;
-
-import com.zdzhai.project.common.DeleteRequest;
-
-
-import com.zdzhai.project.constant.CommonConstant;
-
 import com.zdzhai.project.model.entity.Post;
 import com.zdzhai.project.service.PostService;
 import com.zdzhai.project.service.UserService;

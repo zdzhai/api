@@ -3,21 +3,17 @@ package com.zdzhai.project.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zdzhai.apicommon.common.ErrorCode;
-import com.zdzhai.apicommon.common.ResultUtils;
 import com.zdzhai.apicommon.exception.BusinessException;
 import com.zdzhai.apicommon.model.entity.InterfaceInfo;
-
 import com.zdzhai.apicommon.model.entity.User;
 import com.zdzhai.apicommon.model.entity.UserInterfaceInfo;
 import com.zdzhai.project.mapper.InterfaceInfoMapper;
 import com.zdzhai.project.model.vo.InterfaceInfoLeftNumVO;
 import com.zdzhai.project.service.InterfaceInfoService;
-
 import com.zdzhai.project.service.UserInterfaceInfoService;
 import com.zdzhai.project.service.UserService;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;

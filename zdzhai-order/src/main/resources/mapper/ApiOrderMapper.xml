@@ -2,9 +2,9 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.zdzhai.project.mapper.ApiOrderMapper">
+<mapper namespace="com.zdzhai.order.mapper.ApiOrderMapper">
 
-    <resultMap id="BaseResultMap" type="com.zdzhai.project.model.entity.ApiOrder">
+    <resultMap id="BaseResultMap" type="com.zdzhai.apicommon.model.entity.ApiOrder">
             <id property="id" column="id" jdbcType="BIGINT"/>
             <result property="interfaceId" column="interfaceId" jdbcType="BIGINT"/>
             <result property="userId" column="userId" jdbcType="BIGINT"/>
@@ -30,7 +30,7 @@
         where orderSn = #{orderSn}
     </update>
 
-    <select id="getApiOrderByOrderSn" resultType="com.zdzhai.project.model.entity.ApiOrder">
+    <select id="getApiOrderByOrderSn" resultType="com.zdzhai.apicommon.model.entity.ApiOrder">
         select *
         from api_order
         where orderSn = #{orderSn}

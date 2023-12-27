@@ -1,8 +1,6 @@
 package com.zdzhai.apicommon.model.entity;
 
 import com.baomidou.mybatisplus.annotation.*;
-import com.zdzhai.apicommon.service.InnerInterfaceInfoService;
-import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.io.Serializable;

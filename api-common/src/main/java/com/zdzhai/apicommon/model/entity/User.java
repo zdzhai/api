@@ -12,6 +12,7 @@ import java.util.Date;
 
 /**
  * 用户
+ * @author dongdong
  * @TableName user
  */
 @NoArgsConstructor

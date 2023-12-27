@@ -2,9 +2,8 @@ package com.zdzhai.project.exception;
 
 import com.zdzhai.apicommon.common.BaseResponse;
 import com.zdzhai.apicommon.common.ErrorCode;
-import com.zdzhai.apicommon.common.ResultUtils;
 import com.zdzhai.apicommon.exception.BusinessException;
-
+import com.zdzhai.apicommon.utils.ResultUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;

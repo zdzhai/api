@@ -1,7 +1,8 @@
-package com.zdzhai.project.mapper;
+package com.zdzhai.order.mapper;
 
-import com.zdzhai.project.model.entity.ApiOrder;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.zdzhai.apicommon.model.entity.ApiOrder;
+import org.apache.ibatis.annotations.Mapper;
 
 /**
 * @author 62618
@@ -9,6 +10,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 * @createDate 2023-12-17 16:48:17
 * @Entity com.zdzhai.project.model.entity.ApiOrder
 */
+@Mapper
 public interface ApiOrderMapper extends BaseMapper<ApiOrder> {
 
     /**

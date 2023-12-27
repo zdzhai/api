@@ -1,12 +1,12 @@
-package com.zdzhai.project.config;
+package com.zdzhai.order.config;
 
 import com.google.gson.Gson;
 import com.zdzhai.apicommon.common.ErrorCode;
 import com.zdzhai.apicommon.constant.OrderInfoConstant;
 import com.zdzhai.apicommon.exception.BusinessException;
 import com.zdzhai.apicommon.model.dto.AliPayDtoMQ;
-import com.zdzhai.project.model.entity.ApiOrder;
-import com.zdzhai.project.service.ApiOrderService;
+import com.zdzhai.apicommon.model.entity.ApiOrder;
+import com.zdzhai.order.service.ApiOrderService;
 import org.apache.rocketmq.client.consumer.DefaultMQPushConsumer;
 import org.apache.rocketmq.client.consumer.listener.ConsumeConcurrentlyStatus;
 import org.apache.rocketmq.client.consumer.listener.MessageListenerConcurrently;

@@ -8,10 +8,13 @@ import com.zdzhai.apicommon.service.InnerUserService;
 
 
 import com.zdzhai.project.mapper.UserMapper;
+import com.zdzhai.project.service.UserService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.DubboService;
 
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author dongdong
@@ -22,6 +25,9 @@ public class InnerUserServiceImpl implements InnerUserService {
 
     @Resource
     private UserMapper userMapper;
+
+    @Resource
+    private UserService userService;
 
     /**
      * 根据accessKey获取用户的信息（secretKey）
@@ -37,5 +43,10 @@ public class InnerUserServiceImpl implements InnerUserService {
         queryWrapper.eq("accessKey",accessKey);
 
         return userMapper.selectOne(queryWrapper);
+    }
+
+    @Override
+    public User getLoginUser(HttpServletRequest request, HttpServletResponse response) {
+        return userService.getLoginUser(request,response);
     }
 }

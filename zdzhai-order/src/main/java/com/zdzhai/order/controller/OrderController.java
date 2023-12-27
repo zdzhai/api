@@ -1,12 +1,12 @@
-package com.zdzhai.project.controller;
+package com.zdzhai.order.controller;
 
 
 import com.zdzhai.apicommon.common.BaseResponse;
-import com.zdzhai.apicommon.common.ResultUtils;
-import com.zdzhai.project.model.dto.order.ApiOrderAddRequest;
-import com.zdzhai.project.model.dto.order.ApiOrderCancelRequest;
-import com.zdzhai.project.model.vo.OrderSnVO;
-import com.zdzhai.project.service.ApiOrderService;
+import com.zdzhai.apicommon.utils.ResultUtils;
+import com.zdzhai.order.model.dto.order.ApiOrderAddRequest;
+import com.zdzhai.order.model.dto.order.ApiOrderCancelRequest;
+import com.zdzhai.order.model.vo.OrderSnVO;
+import com.zdzhai.order.service.ApiOrderService;
 import io.swagger.annotations.Api;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.concurrent.ExecutionException;
@@ -26,7 +27,7 @@ import java.util.concurrent.ExecutionException;
 @RequestMapping("/order")
 public class OrderController {
 
-    @Autowired
+    @Resource
     private ApiOrderService apiOrderService;
 
 

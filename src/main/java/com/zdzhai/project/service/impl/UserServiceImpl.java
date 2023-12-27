@@ -17,12 +17,14 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zdzhai.apicommon.common.BaseResponse;
 import com.zdzhai.apicommon.common.CookieConstant;
 import com.zdzhai.apicommon.common.ErrorCode;
-import com.zdzhai.apicommon.common.ResultUtils;
 import com.zdzhai.apicommon.exception.BusinessException;
 import com.zdzhai.apicommon.model.entity.User;
 import com.zdzhai.apicommon.model.entity.thirdparty.Oauth2LoginTo;
 import com.zdzhai.apicommon.utils.CookieUtils;
-import com.zdzhai.project.common.*;
+import com.zdzhai.apicommon.utils.ResultUtils;
+import com.zdzhai.project.common.CheckPhoneNumber;
+import com.zdzhai.project.common.SmsLimiter;
+import com.zdzhai.project.common.TokenUtils;
 import com.zdzhai.project.mapper.InterfaceInfoMapper;
 import com.zdzhai.project.mapper.UserMapper;
 import com.zdzhai.project.model.dto.SmsDTO;
@@ -465,8 +467,8 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
 
         ThirdParty2LoginContext thirdParty2LoginContext = new ThirdParty2LoginContext(oauth2LoginTo.getThird_party_name());
         BaseResponse baseResponse = thirdParty2LoginContext.getResponse(oauth2LoginTo);
-        //todo 这里就是通过使用策略模式把所有第三方登录抽象出来，方便扩展
-        //todo 而不使用if else直接在代码中对第三方登录类型做判断
+        //这里就是通过使用策略模式把所有第三方登录抽象出来，方便扩展
+        //而不使用if else直接在代码中对第三方登录类型做判断
         /*LoginUserVo loginUserVo = null;
         if ("gitee".equals(type)){
             HttpResponse response = HttpRequest.get("https://gitee.com/api/v5/user?access_token=" + accessToken).execute();

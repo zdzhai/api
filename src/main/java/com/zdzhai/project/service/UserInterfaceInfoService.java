@@ -1,11 +1,9 @@
 package com.zdzhai.project.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.zdzhai.apicommon.common.BaseResponse;
+import com.zdzhai.apicommon.model.dto.UserInterfaceInfoUpdateRequest;
 import com.zdzhai.apicommon.model.entity.UserInterfaceInfo;
-import com.zdzhai.project.model.dto.userinterfaceinfo.UserInterfaceInfoUpdateRequest;
 import com.zdzhai.project.model.vo.UserInterfaceLeftNumVO;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;

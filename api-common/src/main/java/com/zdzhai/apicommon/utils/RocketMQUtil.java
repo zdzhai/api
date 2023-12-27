@@ -1,4 +1,4 @@
-package com.zdzhai.project.utils;
+package com.zdzhai.apicommon.utils;
 
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.apache.rocketmq.client.producer.SendCallback;

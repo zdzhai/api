@@ -1,4 +1,4 @@
-package com.zdzhai.project.service.impl;
+package com.zdzhai.order.service.impl;
 
 import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateTime;
@@ -14,20 +14,22 @@ import com.zdzhai.apicommon.common.CookieConstant;
 import com.zdzhai.apicommon.common.ErrorCode;
 import com.zdzhai.apicommon.constant.OrderInfoConstant;
 import com.zdzhai.apicommon.exception.BusinessException;
+import com.zdzhai.apicommon.model.dto.UserInterfaceInfoUpdateRequest;
+import com.zdzhai.apicommon.model.entity.ApiOrder;
 import com.zdzhai.apicommon.model.entity.InterfaceInfo;
 import com.zdzhai.apicommon.model.entity.User;
-import com.zdzhai.project.constant.OrderConstant;
-import com.zdzhai.project.mapper.ApiOrderMapper;
-import com.zdzhai.project.model.dto.order.ApiOrderAddRequest;
-import com.zdzhai.project.model.dto.order.ApiOrderCancelRequest;
-import com.zdzhai.project.model.dto.userinterfaceinfo.UserInterfaceInfoUpdateRequest;
-import com.zdzhai.project.model.entity.ApiOrder;
-import com.zdzhai.project.model.vo.OrderSnVO;
-import com.zdzhai.project.service.ApiOrderService;
-import com.zdzhai.project.service.InterfaceInfoService;
-import com.zdzhai.project.service.UserInterfaceInfoService;
-import com.zdzhai.project.service.UserService;
-import com.zdzhai.project.utils.RocketMQUtil;
+
+import com.zdzhai.apicommon.service.InnerInterfaceInfoService;
+import com.zdzhai.apicommon.service.InnerUserInterfaceInfoService;
+import com.zdzhai.apicommon.service.InnerUserService;
+import com.zdzhai.apicommon.utils.RocketMQUtil;
+import com.zdzhai.order.constant.OrderConstant;
+import com.zdzhai.order.mapper.ApiOrderMapper;
+import com.zdzhai.order.model.dto.order.ApiOrderAddRequest;
+import com.zdzhai.order.model.dto.order.ApiOrderCancelRequest;
+import com.zdzhai.order.model.vo.OrderSnVO;
+import com.zdzhai.order.service.ApiOrderService;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.apache.rocketmq.common.message.Message;
 import org.springframework.beans.BeanUtils;
@@ -53,7 +55,7 @@ import java.util.concurrent.TimeUnit;
 */
 @Service
 public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
-    implements ApiOrderService{
+    implements ApiOrderService {
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
@@ -61,14 +63,14 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
     @Resource
     private ApiOrderMapper apiOrderMapper;
 
-    @Resource
-    private UserService userService;
+    @DubboReference
+    private InnerUserService innerUserService;
 
-    @Resource
-    private UserInterfaceInfoService userInterfaceInfoService;
+    @DubboReference
+    private InnerUserInterfaceInfoService innerUserInterfaceInfoService;
 
-    @Resource
-    private InterfaceInfoService interfaceInfoService;
+    @DubboReference
+    private InnerInterfaceInfoService innerInterfaceInfoService;
 
     @Resource
     private ApplicationContext APPLICATION_CONTEXT;
@@ -81,7 +83,7 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
      */
     @Override
     public void generateToken(HttpServletRequest request, HttpServletResponse response) {
-        User user = userService.getLoginUser(request,response);
+        User user = innerUserService.getLoginUser(request,response);
         Long userId = user.getId();
         if (null == userId){
             throw new BusinessException(ErrorCode.FORBIDDEN_ERROR);
@@ -109,7 +111,7 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
                                      HttpServletResponse response)
             throws ExecutionException, InterruptedException {
         //1、远程获取当前登录用户
-        User loginUser = userService.getLoginUser(request,response);
+        User loginUser = innerUserService.getLoginUser(request,response);
         if (null == loginUser){
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
@@ -122,7 +124,7 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         //3、查询接口信息
-        InterfaceInfo interfaceInfoById = interfaceInfoService.getById(interfaceId);
+        InterfaceInfo interfaceInfoById = innerInterfaceInfoService.getById(interfaceId);
         if (interfaceInfoById == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
@@ -168,7 +170,7 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
         userInterfaceInfoUpdateRequest.setOrderNum(orderNum);
         userInterfaceInfoUpdateRequest.setInterfaceInfoId(interfaceId);
         userInterfaceInfoUpdateRequest.setUserId(loginUser.getId());
-        boolean updateUserInterfaceInfo = userInterfaceInfoService.updateUserInterfaceInfo(userInterfaceInfoUpdateRequest, request, response);
+        boolean updateUserInterfaceInfo = innerUserInterfaceInfoService.updateUserInterfaceInfo(userInterfaceInfoUpdateRequest, request, response);
         if (!updateUserInterfaceInfo) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR,"库存更新失败");
         }
@@ -202,8 +204,8 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
     @Override
     @Transactional
     public String cancelOrderSn(ApiOrderCancelRequest apiOrderCancelRequest,
-                                 HttpServletRequest request,
-                                 HttpServletResponse response) {
+                                HttpServletRequest request,
+                                HttpServletResponse response) {
         Long orderNum = apiOrderCancelRequest.getOrderNum();
         String orderSn = apiOrderCancelRequest.getOrderSn();
         //订单已经被取消的情况
@@ -214,7 +216,7 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
         //更新订单表状态
         this.update(new UpdateWrapper<ApiOrder>().eq("orderSn", orderSn).set("status",2));
         //减少接口余量
-        User loginUser = userService.getLoginUser(request,response);
+        User loginUser = innerUserService.getLoginUser(request,response);
         if (null == loginUser){
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
@@ -222,7 +224,7 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
         userInterfaceInfoUpdateRequest.setOrderNum(orderNum * -1);
         userInterfaceInfoUpdateRequest.setInterfaceInfoId(apiOrderCancelRequest.getInterfaceId());
         userInterfaceInfoUpdateRequest.setUserId(loginUser.getId());
-        boolean updateUserInterfaceInfo = userInterfaceInfoService.updateUserInterfaceInfo(userInterfaceInfoUpdateRequest, request, response);
+        boolean updateUserInterfaceInfo = innerUserInterfaceInfoService.updateUserInterfaceInfo(userInterfaceInfoUpdateRequest, request, response);
         if (!updateUserInterfaceInfo) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR,"取消订单失败");
         }

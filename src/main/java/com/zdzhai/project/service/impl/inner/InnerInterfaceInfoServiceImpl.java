@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.zdzhai.apicommon.model.entity.InterfaceInfo;
 import com.zdzhai.apicommon.service.InnerInterfaceInfoService;
 import com.zdzhai.project.mapper.InterfaceInfoMapper;
+import com.zdzhai.project.service.InterfaceInfoService;
 import org.apache.dubbo.config.annotation.DubboService;
 
 import javax.annotation.Resource;
@@ -18,6 +19,9 @@ public class InnerInterfaceInfoServiceImpl implements InnerInterfaceInfoService 
     @Resource
     private InterfaceInfoMapper interfaceInfoMapper;
 
+    @Resource
+    private InterfaceInfoService interfaceInfoService;
+
     @Override
     public InterfaceInfo getInterfaceInfo(String url, String method) {
 
@@ -26,5 +30,10 @@ public class InnerInterfaceInfoServiceImpl implements InnerInterfaceInfoService 
         queryWrapper.eq("method",method);
 
         return interfaceInfoMapper.selectOne(queryWrapper);
+    }
+
+    @Override
+    public InterfaceInfo getById(Long interfaceInfoId) {
+        return interfaceInfoService.getById(interfaceInfoId);
     }
 }

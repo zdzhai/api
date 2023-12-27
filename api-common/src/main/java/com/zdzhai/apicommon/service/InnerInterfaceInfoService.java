@@ -18,4 +18,11 @@ public interface InnerInterfaceInfoService {
      * @return
      */
     InterfaceInfo getInterfaceInfo(String path, String method);
+
+    /**
+     *   从数据库中查询模拟接口是否存在，以及请求方法时候匹配
+     * @param interfaceInfoId
+     * @return
+     */
+    InterfaceInfo getById(Long interfaceInfoId);
 }

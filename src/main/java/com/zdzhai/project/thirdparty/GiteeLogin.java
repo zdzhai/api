@@ -5,12 +5,10 @@ import cn.hutool.http.HttpResponse;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.zdzhai.apicommon.common.BaseResponse;
-import com.zdzhai.apicommon.common.ResultUtils;
 import com.zdzhai.apicommon.model.entity.thirdparty.Oauth2LoginTo;
 import com.zdzhai.apicommon.model.entity.thirdparty.vo.LoginUserVo;
+import com.zdzhai.apicommon.utils.ResultUtils;
 import com.zdzhai.project.common.Oauth2LoginUtils;
-
-import javax.annotation.Resource;
 
 /**
  * @author dongdong

@@ -22,7 +22,7 @@
         createTime,updateTime,isDelete
     </sql>
     <update id="updateUserInterfaceInfoLeftNum"
-        parameterType="com.zdzhai.project.model.dto.userinterfaceinfo.UserInterfaceInfoUpdateRequest">
+        parameterType="com.zdzhai.apicommon.model.dto.UserInterfaceInfoUpdateRequest">
         update user_interface_info uii
         set uii.leftNum = uii.leftNum + #{orderNum}
         where uii.isDelete=0 AND uii.status = 0
