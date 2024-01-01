@@ -6,8 +6,6 @@ import com.zdzhai.project.service.UserInterfaceInfoService;
 import org.apache.dubbo.config.annotation.DubboService;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author dongdong
@@ -25,7 +23,7 @@ public class InnerUserInterfaceInfoServiceImpl implements InnerUserInterfaceInfo
     }
 
     @Override
-    public boolean updateUserInterfaceInfo(UserInterfaceInfoUpdateRequest userInterfaceInfoUpdateRequest, HttpServletRequest request, HttpServletResponse response) {
-        return userInterfaceInfoService.updateUserInterfaceInfo(userInterfaceInfoUpdateRequest, request, response);
+    public boolean updateUserInterfaceInfo(UserInterfaceInfoUpdateRequest userInterfaceInfoUpdateRequest) {
+        return userInterfaceInfoService.updateUserInterfaceInfoForRemote(userInterfaceInfoUpdateRequest);
     }
 }

@@ -24,11 +24,7 @@ public interface InnerUserInterfaceInfoService {
     /**
      * 更新用户接口关系数据
      * @param userInterfaceInfoUpdateRequest
-     * @param request
-     * @param response
      * @return
      */
-    boolean updateUserInterfaceInfo(UserInterfaceInfoUpdateRequest userInterfaceInfoUpdateRequest,
-                                    HttpServletRequest request,
-                                    HttpServletResponse response);
+    boolean updateUserInterfaceInfo(UserInterfaceInfoUpdateRequest userInterfaceInfoUpdateRequest);
 }

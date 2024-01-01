@@ -1,8 +1,6 @@
 package com.zdzhai.project.service;
 
 
-
-
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.zdzhai.apicommon.common.BaseResponse;
 import com.zdzhai.apicommon.model.entity.User;
@@ -109,4 +107,5 @@ public interface UserService extends IService<User> {
     BaseResponse oauth2Login(Oauth2LoginTo oauth2ResTo);
 
     User selectOne(String userAccount);
+
 }

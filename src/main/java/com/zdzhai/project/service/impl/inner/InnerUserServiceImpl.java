@@ -5,16 +5,12 @@ import com.zdzhai.apicommon.common.ErrorCode;
 import com.zdzhai.apicommon.exception.BusinessException;
 import com.zdzhai.apicommon.model.entity.User;
 import com.zdzhai.apicommon.service.InnerUserService;
-
-
 import com.zdzhai.project.mapper.UserMapper;
 import com.zdzhai.project.service.UserService;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.dubbo.config.annotation.DubboService;
 
 import javax.annotation.Resource;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author dongdong
@@ -36,7 +32,7 @@ public class InnerUserServiceImpl implements InnerUserService {
      */
     @Override
     public User getInvokeUser(String accessKey) {
-        if (StringUtils.isBlank(accessKey)){
+        if (StringUtils.isBlank(accessKey)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
@@ -45,8 +41,4 @@ public class InnerUserServiceImpl implements InnerUserService {
         return userMapper.selectOne(queryWrapper);
     }
 
-    @Override
-    public User getLoginUser(HttpServletRequest request, HttpServletResponse response) {
-        return userService.getLoginUser(request,response);
-    }
 }

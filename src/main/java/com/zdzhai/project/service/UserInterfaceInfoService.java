@@ -57,4 +57,11 @@ public interface UserInterfaceInfoService extends IService<UserInterfaceInfo> {
      * @return
      */
     List<UserInterfaceLeftNumVO> getUserInterfaceLeftNum(Long loginUserId);
+
+    /**
+     * 远程更新用户接口信息
+     * @param userInterfaceInfoUpdateRequest
+     * @return
+     */
+    boolean updateUserInterfaceInfoForRemote(UserInterfaceInfoUpdateRequest userInterfaceInfoUpdateRequest);
 }

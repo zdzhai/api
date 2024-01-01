@@ -141,6 +141,21 @@ public class UserInterfaceInfoServiceImpl extends ServiceImpl<UserInterfaceInfoM
         List<UserInterfaceLeftNumVO>  userInterfaceLeftNumVo =  userInterfaceInfoMapper.getUserInterfaceLeftNum(loginUserId);
         return userInterfaceLeftNumVo;
     }
+
+    @Override
+    public boolean updateUserInterfaceInfoForRemote(UserInterfaceInfoUpdateRequest userInterfaceInfoUpdateRequest) {
+        UserInterfaceInfo userInterfaceInfo = new UserInterfaceInfo();
+        BeanUtils.copyProperties(userInterfaceInfoUpdateRequest, userInterfaceInfo);
+        // 参数校验
+        long interfaceInfoId = userInterfaceInfoUpdateRequest.getInterfaceInfoId();
+        // 判断接口是否存在
+        UserInterfaceInfo dbUserInterfaceInfo = this.getById(interfaceInfoId);
+        if (dbUserInterfaceInfo == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR);
+        }
+        int updateRow = userInterfaceInfoMapper.updateUserInterfaceInfoLeftNum(userInterfaceInfoUpdateRequest);
+        return updateRow != 0;
+    }
 }
 
 
