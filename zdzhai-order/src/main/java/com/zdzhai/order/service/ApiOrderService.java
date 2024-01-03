@@ -1,9 +1,15 @@
 package com.zdzhai.order.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.zdzhai.apicommon.common.BaseResponse;
+import com.zdzhai.apicommon.model.dto.ApiOrderTokenRequest;
 import com.zdzhai.apicommon.model.entity.ApiOrder;
+import com.zdzhai.apicommon.model.entity.User;
 import com.zdzhai.order.model.dto.order.ApiOrderAddRequest;
 import com.zdzhai.order.model.dto.order.ApiOrderCancelRequest;
+import com.zdzhai.order.model.dto.order.ApiOrderStatusInfoDto;
+import com.zdzhai.order.model.vo.ApiOrderStatusVO;
 import com.zdzhai.order.model.vo.OrderSnVO;
 
 
@@ -24,7 +30,8 @@ public interface ApiOrderService extends IService<ApiOrder> {
      * @param response
      * @return
      */
-    void generateToken(HttpServletRequest request, HttpServletResponse response);
+    void generateToken(HttpServletRequest request,
+                       HttpServletResponse response);
 
     /**
      * 生成订单接口
@@ -60,4 +67,19 @@ public interface ApiOrderService extends IService<ApiOrder> {
      * @return
      */
     ApiOrder getApiOrderByOrderSn(String orderSn);
+
+    /**
+     * 获取当前登录用户的status订单信息
+     * @param statusInfoDto
+     * @param request
+     * @return
+     */
+    Page<ApiOrderStatusVO> getCurrentOrderInfo(ApiOrderStatusInfoDto statusInfoDto, HttpServletRequest request);
+
+    /**
+     * 获取当前登录用户
+     * @param request
+     * @return
+     */
+    User getLoginUser(HttpServletRequest request);
 }

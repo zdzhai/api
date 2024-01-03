@@ -35,4 +35,16 @@
         from api_order
         where orderSn = #{orderSn}
     </select>
+    <select id="getCurrentOrderInfo" resultType="com.zdzhai.order.model.vo.ApiOrderStatusVO">
+        SELECT o.interfaceId,o.orderSn,o.orderNum,o.totalAmount,o.charging,o.createTime, i.name, i.description, o.`status`, a.gmtPayment ,a.tradeNo
+        FROM `api_order` o
+        LEFT JOIN alipay_info a ON o.orderSn=a.orderSn
+        LEFT JOIN interface_info i ON o.interfaceId=i.id
+        <where>
+            and o.userId =#{userId}
+            <if test="status!='' and status != null">
+                and o.`status` = #{status}
+            </if>
+        </where>
+    </select>
 </mapper>

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zdzhai.order.mapper.SeckillVoucherMapper">
+
+    <resultMap id="BaseResultMap" type="com.zdzhai.order.model.entity.SeckillVoucher">
+            <id property="voucherId" column="voucherId" jdbcType="BIGINT"/>
+            <result property="stock" column="stock" jdbcType="INTEGER"/>
+            <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+            <result property="beginTime" column="beginTime" jdbcType="TIMESTAMP"/>
+            <result property="endTime" column="endTime" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        voucherId,stock,createTime,
+        beginTime,endTime,updateTime
+    </sql>
+</mapper>

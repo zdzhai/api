@@ -28,7 +28,11 @@ public class RedisIdWorker {
     private StringRedisTemplate stringRedisTemplate;
 
 
-    public long nextOrderSn(String keyPrefix) {
+    /**
+     * 生成订单号
+     * @return
+     */
+    public String nextOrderSn(String keyPrefix) {
         // 1.生成时间戳
         LocalDateTime now = LocalDateTime.now();
         long nowSecond = now.toEpochSecond(ZoneOffset.UTC);
@@ -41,6 +45,6 @@ public class RedisIdWorker {
         long count = stringRedisTemplate.opsForValue().increment("icr:" + keyPrefix + ":" + date);
 
         // 3.拼接并返回
-        return timestamp << COUNT_BITS | count;
+        return String.valueOf(timestamp << COUNT_BITS | count);
     }
 }

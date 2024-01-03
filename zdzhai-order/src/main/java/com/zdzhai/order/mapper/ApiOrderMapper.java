@@ -1,8 +1,11 @@
 package com.zdzhai.order.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zdzhai.apicommon.model.entity.ApiOrder;
+import com.zdzhai.order.model.vo.ApiOrderStatusVO;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 /**
 * @author 62618
@@ -27,6 +30,15 @@ public interface ApiOrderMapper extends BaseMapper<ApiOrder> {
      * @return
      */
     ApiOrder getApiOrderByOrderSn(String orderSn);
+
+    /**
+     * 查询当前用户的订单信息
+     * @param objectPage
+     * @param userId
+     * @param status
+     * @return
+     */
+    Page<ApiOrderStatusVO> getCurrentOrderInfo(Page<Object> objectPage, @Param("userId") Long userId, @Param("status") Integer status);
 }
 
 

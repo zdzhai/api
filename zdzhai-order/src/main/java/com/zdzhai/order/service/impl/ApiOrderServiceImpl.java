@@ -1,5 +1,7 @@
 package com.zdzhai.order.service.impl;
 
+import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.bean.copier.CopyOptions;
 import cn.hutool.core.date.DateField;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
@@ -8,27 +10,32 @@ import cn.hutool.core.util.RandomUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.google.gson.Gson;
 import com.zdzhai.apicommon.common.CookieConstant;
 import com.zdzhai.apicommon.common.ErrorCode;
 import com.zdzhai.apicommon.constant.OrderInfoConstant;
 import com.zdzhai.apicommon.exception.BusinessException;
+import com.zdzhai.apicommon.model.dto.ApiOrderTokenRequest;
 import com.zdzhai.apicommon.model.dto.UserInterfaceInfoUpdateRequest;
 import com.zdzhai.apicommon.model.entity.ApiOrder;
 import com.zdzhai.apicommon.model.entity.InterfaceInfo;
 import com.zdzhai.apicommon.model.entity.User;
-
 import com.zdzhai.apicommon.service.InnerInterfaceInfoService;
 import com.zdzhai.apicommon.service.InnerUserInterfaceInfoService;
-import com.zdzhai.apicommon.service.InnerUserService;
+import com.zdzhai.apicommon.utils.CookieUtils;
+import com.zdzhai.apicommon.utils.ResultUtils;
 import com.zdzhai.apicommon.utils.RocketMQUtil;
 import com.zdzhai.order.constant.OrderConstant;
 import com.zdzhai.order.mapper.ApiOrderMapper;
 import com.zdzhai.order.model.dto.order.ApiOrderAddRequest;
 import com.zdzhai.order.model.dto.order.ApiOrderCancelRequest;
+import com.zdzhai.order.model.dto.order.ApiOrderStatusInfoDto;
+import com.zdzhai.order.model.vo.ApiOrderStatusVO;
 import com.zdzhai.order.model.vo.OrderSnVO;
 import com.zdzhai.order.service.ApiOrderService;
+import com.zdzhai.order.utils.RedisIdWorker;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.apache.rocketmq.client.producer.DefaultMQProducer;
 import org.apache.rocketmq.common.message.Message;
@@ -45,8 +52,12 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
 * @author 62618
@@ -64,9 +75,6 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
     private ApiOrderMapper apiOrderMapper;
 
     @DubboReference
-    private InnerUserService innerUserService;
-
-    @DubboReference
     private InnerUserInterfaceInfoService innerUserInterfaceInfoService;
 
     @DubboReference
@@ -75,6 +83,14 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
     @Resource
     private ApplicationContext APPLICATION_CONTEXT;
 
+    @Resource
+    private RedisIdWorker redisIdWorker;
+
+    /**
+     * 用户信息的redisKEY
+     */
+    private final String API_USER_ID = "api:user:";
+
     /**
      * 生成防重令牌：保证创建订单的接口幂等性
      * @param request
@@ -82,10 +98,11 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
      * @return
      */
     @Override
-    public void generateToken(HttpServletRequest request, HttpServletResponse response) {
-        User user = innerUserService.getLoginUser(request,response);
+    public void generateToken(HttpServletRequest request,
+                              HttpServletResponse response) {
+        User user = this.getLoginUser(request);
         Long userId = user.getId();
-        if (null == userId){
+        if (null == userId) {
             throw new BusinessException(ErrorCode.FORBIDDEN_ERROR);
         }
         //防重令牌
@@ -111,8 +128,9 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
                                      HttpServletResponse response)
             throws ExecutionException, InterruptedException {
         //1、远程获取当前登录用户
-        User loginUser = innerUserService.getLoginUser(request,response);
-        if (null == loginUser){
+        Cookie[] cookies = request.getCookies();
+        User loginUser = this.getLoginUser(request);
+        if (null == loginUser) {
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
         //2、健壮性校验
@@ -134,10 +152,9 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
             throw new BusinessException(ErrorCode.OPERATION_ERROR);
         }
         //4、验证令牌是否合法【令牌的对比和删除必须保证原子性】
-        Cookie[] cookies = request.getCookies();
         String token = null;
         for (Cookie cookie : cookies) {
-            if (CookieConstant.orderToken.equals(cookie.getName())){
+            if (CookieConstant.orderToken.equals(cookie.getName())) {
                 token = cookie.getValue();
             }
         }
@@ -149,8 +166,8 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
             throw new BusinessException(ErrorCode.OPERATION_ERROR,"提交太快了，请重新提交");
         }
 
-        //5、todo 使用雪花算法生成订单id，并保存订单
-        String orderSn = generateOrderSn(loginUser.getId().toString());
+        //5、使用雪花算法思想生成订单id，并保存订单
+        String orderSn = redisIdWorker.nextOrderSn("api:order");
         ApiOrder apiOrder = new ApiOrder();
         apiOrder.setTotalAmount(totalAmount);
         apiOrder.setOrderSn(orderSn);
@@ -170,7 +187,12 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
         userInterfaceInfoUpdateRequest.setOrderNum(orderNum);
         userInterfaceInfoUpdateRequest.setInterfaceInfoId(interfaceId);
         userInterfaceInfoUpdateRequest.setUserId(loginUser.getId());
-        boolean updateUserInterfaceInfo = innerUserInterfaceInfoService.updateUserInterfaceInfo(userInterfaceInfoUpdateRequest, request, response);
+        // 参数校验
+        User user = this.getLoginUser(request);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        boolean updateUserInterfaceInfo = innerUserInterfaceInfoService.updateUserInterfaceInfo(userInterfaceInfoUpdateRequest);
         if (!updateUserInterfaceInfo) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR,"库存更新失败");
         }
@@ -216,7 +238,10 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
         //更新订单表状态
         this.update(new UpdateWrapper<ApiOrder>().eq("orderSn", orderSn).set("status",2));
         //减少接口余量
-        User loginUser = innerUserService.getLoginUser(request,response);
+        ApiOrderTokenRequest apiOrderTokenRequest = new ApiOrderTokenRequest();
+        Cookie[] cookies = request.getCookies();
+        apiOrderTokenRequest.setRequestCookie(cookies);
+        User loginUser = this.getLoginUser(request);
         if (null == loginUser){
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
@@ -224,7 +249,12 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
         userInterfaceInfoUpdateRequest.setOrderNum(orderNum * -1);
         userInterfaceInfoUpdateRequest.setInterfaceInfoId(apiOrderCancelRequest.getInterfaceId());
         userInterfaceInfoUpdateRequest.setUserId(loginUser.getId());
-        boolean updateUserInterfaceInfo = innerUserInterfaceInfoService.updateUserInterfaceInfo(userInterfaceInfoUpdateRequest, request, response);
+        // 参数校验
+        User user = this.getLoginUser(request);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        boolean updateUserInterfaceInfo = innerUserInterfaceInfoService.updateUserInterfaceInfo(userInterfaceInfoUpdateRequest);
         if (!updateUserInterfaceInfo) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR,"取消订单失败");
         }
@@ -242,17 +272,76 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
     }
 
     /**
-     * 生成订单号
+     * 获取当前登录用户的status订单信息
+     * @param statusInfoDto
+     * @param request
      * @return
      */
-    private String generateOrderSn(String userId) {
-        //todo 按照黑马点评的订单号生成方法,高并发下有可能造成订单号重复
-        //todo 分布式数据库中也有可能造成订单号重复
-        String timeId = IdWorker.getTimeId();
-        String substring = timeId.substring(0, timeId.length() - 15);
-        return substring + RandomUtil.randomNumbers(10) + userId.toString();
+    @Override
+    public Page<ApiOrderStatusVO> getCurrentOrderInfo(ApiOrderStatusInfoDto statusInfoDto, HttpServletRequest request) {
+        Long userId = statusInfoDto.getUserId();
+        //前端筛选即可
+        Integer status = statusInfoDto.getStatus();
+        if (null == userId){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        long current = statusInfoDto.getCurrent();
+        // 限制爬虫
+        long size = statusInfoDto.getPageSize();
+        if (size > 20) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        Page<ApiOrderStatusVO> apiOrderStatusVO = apiOrderMapper.getCurrentOrderInfo(new Page<>(current, size),userId,status);
+        List<ApiOrderStatusVO> records = apiOrderStatusVO.getRecords();
+        List<ApiOrderStatusVO> collect = records.stream().map(record -> {
+            Integer status1 = record.getStatus();
+            if (status1 == 0) {
+                Date date = record.getCreateTime();
+                record.setExpirationTime(DateUtil.offset(date, DateField.MINUTE, 30));
+            }
+            return record;
+        }).collect(Collectors.toList());
+        apiOrderStatusVO.setRecords(collect);
+        return apiOrderStatusVO;
     }
 
+    @Override
+    public User getLoginUser(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies == null || cookies.length == 0){
+            return null;
+        }
+        String remember = null;
+        String authorization = null;
+        for ( Cookie cookie : cookies){
+            String name = cookie.getName();
+            if (CookieConstant.headAuthorization.equals(name)){
+                authorization = cookie.getValue();
+            }
+            if (CookieConstant.autoLoginAuthCheck.equals(name)){
+                remember = cookie.getValue();
+            }
+        }
+        //token 信息有问题则抛异常
+        if (authorization == null || remember == null){
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        CookieUtils cookieUtils = new CookieUtils();
+        String[] strings = cookieUtils.decodeAutoLoginKey(remember);
+        if (strings.length!=3){
+            throw new BusinessException(ErrorCode.ILLEGAL_ERROR,"请重新登录");
+        }
+        String sId = strings[0];
+        String sUserAccount = strings[1];
+        Map<Object, Object> userMap = stringRedisTemplate.opsForHash().entries(API_USER_ID + sId);
+        User user = new User();
+        if (userMap != null && userMap.size() != 0) {
+            user = BeanUtil.mapToBean(userMap, User.class, true, CopyOptions.create()
+                    .setIgnoreNullValue(true)
+                    .setFieldValueEditor((fieldName, fieldValue) -> fieldValue.toString()));
+        }
+        return user;
+    }
 }
 
 

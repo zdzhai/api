@@ -1,14 +1,16 @@
 package com.zdzhai.order.controller;
 
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.zdzhai.apicommon.common.BaseResponse;
 import com.zdzhai.apicommon.utils.ResultUtils;
 import com.zdzhai.order.model.dto.order.ApiOrderAddRequest;
 import com.zdzhai.order.model.dto.order.ApiOrderCancelRequest;
+import com.zdzhai.order.model.dto.order.ApiOrderStatusInfoDto;
+import com.zdzhai.order.model.vo.ApiOrderStatusVO;
 import com.zdzhai.order.model.vo.OrderSnVO;
 import com.zdzhai.order.service.ApiOrderService;
 import io.swagger.annotations.Api;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,7 +42,7 @@ public class OrderController {
     @GetMapping("/generateToken")
     public BaseResponse<String> generateToken(HttpServletRequest request,
                                       HttpServletResponse response){
-        apiOrderService.generateToken(request,response);
+        apiOrderService.generateToken(request, response);
         return ResultUtils.success("ok");
     }
 
@@ -71,6 +73,18 @@ public class OrderController {
                                               HttpServletResponse response) {
         String ans = apiOrderService.cancelOrderSn(apiOrderCancelRequest,request,response);
         return ResultUtils.success("取消订单成功");
+    }
+
+    /**
+     * 获取当前登录用户的status订单信息
+     * @param statusInfoDto
+     * @param request
+     * @return
+     */
+    @PostMapping("/getCurrentOrderInfo")
+    public BaseResponse<Page<ApiOrderStatusVO>> getCurrentOrderInfo(ApiOrderStatusInfoDto statusInfoDto, HttpServletRequest request){
+        Page<ApiOrderStatusVO> apiOrderStatusVOPage = apiOrderService.getCurrentOrderInfo(statusInfoDto,request);
+        return ResultUtils.success(apiOrderStatusVOPage);
     }
 
 }

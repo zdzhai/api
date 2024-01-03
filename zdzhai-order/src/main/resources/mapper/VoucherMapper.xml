@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.zdzhai.order.mapper.VoucherMapper">
+
+    <resultMap id="BaseResultMap" type="com.zdzhai.order.model.entity.Voucher">
+            <id property="id" column="id" jdbcType="BIGINT"/>
+            <result property="interfaceId" column="InterfaceId" jdbcType="BIGINT"/>
+            <result property="title" column="title" jdbcType="VARCHAR"/>
+            <result property="subTitle" column="subTitle" jdbcType="VARCHAR"/>
+            <result property="rules" column="rules" jdbcType="VARCHAR"/>
+            <result property="payValue" column="payValue" jdbcType="BIGINT"/>
+            <result property="actualValue" column="actualValue" jdbcType="BIGINT"/>
+            <result property="type" column="type" jdbcType="TINYINT"/>
+            <result property="status" column="status" jdbcType="TINYINT"/>
+            <result property="createTime" column="createTime" jdbcType="TIMESTAMP"/>
+            <result property="updateTime" column="updateTime" jdbcType="TIMESTAMP"/>
+    </resultMap>
+
+    <sql id="Base_Column_List">
+        id,InterfaceId,title,
+        subTitle,rules,payValue,
+        actualValue,type,status,
+        createTime,updateTime
+    </sql>
+
+    <update id="onlineVoucherById">
+        update voucher v
+        set status = 1
+        where v.id = #{voucherId} and status != 3
+    </update>
+
+    <update id="offlineVoucherById">
+        update voucher v
+        set status = 2
+        where v.id = #{voucherId} and status != 3
+    </update>
+
+    <select id="queryVoucherOfInterface" resultType="com.zdzhai.order.model.vo.VoucherVO" parameterType="java.lang.Long">
+        SELECT
+            v.`id`, v.`interfaceId`, v.`title`, v.`subTitle`, v.`rules`, v.`payValue`,
+            v.`actualValue`, v.`type`, sv.`stock` , sv.beginTime , sv.endTime
+        FROM voucher v
+        LEFT JOIN  seckill_voucher sv ON v.id = sv.voucherId
+        WHERE v.interfaceId = #{interfaceId} AND v.status = 1
+    </select>
+    <select id="queryInterfaceInfoByVoucherId" resultType="java.lang.String">
+        SELECT
+            ii.description
+        from interface_info ii
+        where ii.id = #{interfaceId};
+    </select>
+    <select id="queryStartEndTimeByVoucherId" resultType="com.zdzhai.order.model.entity.SeckillVoucher">
+        SELECT
+            sv.stock,
+            sv.beginTime,
+            sv.endTime
+        from seckill_voucher sv
+        where sv.voucherId = #{id};
+    </select>
+
+</mapper>

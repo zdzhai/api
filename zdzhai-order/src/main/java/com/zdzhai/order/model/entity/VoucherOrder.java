@@ -19,7 +19,7 @@ public class VoucherOrder implements Serializable {
      * 主键
      */
     @TableId
-    private Long id;
+    private String id;
 
     /**
      * 下单的用户id
