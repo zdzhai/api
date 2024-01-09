@@ -1,6 +1,7 @@
 package com.zdzhai.order.service;
 
 import com.zdzhai.apicommon.common.BaseResponse;
+import com.zdzhai.order.model.dto.voucherorder.BuyVoucherOrderDTO;
 import com.zdzhai.order.model.entity.VoucherOrder;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -14,16 +15,16 @@ import javax.servlet.http.HttpServletRequest;
 public interface VoucherOrderService extends IService<VoucherOrder> {
     /**
      * 秒杀优惠券
-     * @param voucherId
+     * @param buyVoucherOrderDTO
      * @return
      */
-    BaseResponse<String> seckillVoucher(Long voucherId,
+    BaseResponse<String> seckillVoucher(BuyVoucherOrderDTO buyVoucherOrderDTO,
                                         HttpServletRequest request) throws InterruptedException;
 
     /**
-     * 创建优惠券
+     * 创建秒杀优惠券订单
      * @param voucherId
      * @return
      */
-    BaseResponse<String> createVoucherOrder(Long voucherId, Long userId);
+    BaseResponse<String> createSeckillVoucherOrder(Long voucherId, Long userId);
 }

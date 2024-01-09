@@ -9,10 +9,14 @@ import com.zdzhai.apicommon.utils.ResultUtils;
 import com.zdzhai.order.model.dto.voucher.VoucherDTO;
 import com.zdzhai.order.model.dto.voucher.VoucherQueryDTO;
 import com.zdzhai.order.model.dto.voucher.VoucherUpdateDTO;
+import com.zdzhai.order.model.entity.SeckillVoucher;
 import com.zdzhai.order.model.entity.Voucher;
 import com.zdzhai.order.model.vo.VoucherVO;
+import com.zdzhai.order.service.SeckillVoucherService;
 import com.zdzhai.order.service.VoucherService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
@@ -23,10 +27,14 @@ import javax.annotation.Resource;
  */
 @RestController
 @RequestMapping("/voucher")
+@Slf4j
 public class VoucherController {
 
     @Resource
     private VoucherService voucherService;
+
+    @Resource
+    private SeckillVoucherService seckillVoucherService;
 
     /**
      * 新增优惠券
@@ -58,9 +66,9 @@ public class VoucherController {
     @GetMapping("/list/page")
     public BaseResponse<Page<VoucherVO>> listVouchers(VoucherQueryDTO voucherQueryDTO) {
         Page<VoucherVO> voucherVOPage = voucherService.listVouchers(voucherQueryDTO);
+
         return ResultUtils.success(voucherVOPage);
     }
-    //todo 修改新增接口（普通券时无stock选项，以及生效和失效时间）
 
     /**
      * 上架优惠券
@@ -88,6 +96,7 @@ public class VoucherController {
      * @return
      */
     @PostMapping("/update")
+    @Transactional
     public BaseResponse<Boolean> updateVoucher(@RequestBody VoucherUpdateDTO voucherUpdateDTO) {
         if (voucherUpdateDTO == null || voucherUpdateDTO.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -100,8 +109,27 @@ public class VoucherController {
         if (dbVoucher == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-
-        boolean result = voucherService.updateById(voucher);
+        boolean result = false;
+        try {
+            result = voucherService.updateById(voucher);
+            SeckillVoucher seckillVoucher = new SeckillVoucher();
+            if (voucherUpdateDTO.getType() == 1) {
+                seckillVoucher.setVoucherId(id);
+                BeanUtils.copyProperties(voucherUpdateDTO, seckillVoucher);
+                result = seckillVoucherService.updateById(seckillVoucher);
+            }
+        } catch (Exception e) {
+            log.error("更新优惠券信息失败");
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR);
+        }
         return ResultUtils.success(result);
     }
+
+    /**
+     * 接口名称
+     * 优惠券标题
+     * 秒杀券开始和截止时间
+     * 使用时间全时间段，不做要求
+     */
+
 }

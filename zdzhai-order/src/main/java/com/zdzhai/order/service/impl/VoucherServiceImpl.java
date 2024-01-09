@@ -7,7 +7,7 @@ import com.zdzhai.apicommon.common.BaseResponse;
 import com.zdzhai.apicommon.common.ErrorCode;
 import com.zdzhai.apicommon.constant.CommonConstant;
 import com.zdzhai.apicommon.exception.BusinessException;
-import com.zdzhai.apicommon.model.entity.InterfaceInfo;
+import com.zdzhai.apicommon.utils.AmountUtils;
 import com.zdzhai.apicommon.utils.ResultUtils;
 import com.zdzhai.order.constant.VouvherConstant;
 import com.zdzhai.order.mapper.VoucherMapper;
@@ -110,6 +110,12 @@ public class VoucherServiceImpl extends ServiceImpl<VoucherMapper, Voucher>
             BeanUtils.copyProperties(voucher, voucherVO);
             //秒杀券去查自己的信息得到接口名称，库存，生效和失效时间
             String description = voucherMapper.queryInterfaceInfoByVoucherId(voucher.getInterfaceId());
+            try {
+                voucherVO.setPayValue(AmountUtils.changeF2Y(voucher.getPayValue()));
+                voucherVO.setActualValue(AmountUtils.changeF2Y(voucher.getActualValue()));
+            } catch (Exception e) {
+                log.error("listVouchers: 金钱转换错误！");
+            }
             voucherVO.setDescription(description);
             if (voucher.getType() == 1) {
                  SeckillVoucher seckillVoucher = voucherMapper.queryStartEndTimeByVoucherId(voucher.getId());

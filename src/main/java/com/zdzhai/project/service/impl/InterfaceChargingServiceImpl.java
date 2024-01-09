@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.zdzhai.apicommon.common.ErrorCode;
 import com.zdzhai.apicommon.exception.BusinessException;
+import com.zdzhai.apicommon.utils.AmountUtils;
 import com.zdzhai.project.mapper.InterfaceChargingMapper;
 import com.zdzhai.project.model.dto.interfacecharging.InterfaceChargingAddRequest;
 import com.zdzhai.project.model.dto.interfacecharging.InterfaceChargingQueryRequest;
@@ -78,6 +79,16 @@ public class InterfaceChargingServiceImpl extends ServiceImpl<InterfaceChargingM
         long current = chargingQueryRequest.getCurrent();
         long size = chargingQueryRequest.getPageSize();
         Page<InterfaceChargingVO> chargingVOList = interfaceChargingMapper.selectOnlinePage(new Page<>(current, size));
+        chargingVOList.getRecords().forEach(interfaceChargingVO -> {
+            try {
+                if (interfaceChargingVO.getCharging() != null) {
+                    String rmb = AmountUtils.changeF2Y(interfaceChargingVO.getCharging());
+                    interfaceChargingVO.setCharging(rmb);
+                }
+            } catch (Exception exception) {
+                log.error("getChargingInfos: 金钱转换错误！");
+            }
+        });
         return chargingVOList;
     }
 }

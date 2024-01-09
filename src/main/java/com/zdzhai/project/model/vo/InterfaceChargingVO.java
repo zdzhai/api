@@ -29,7 +29,7 @@ public class InterfaceChargingVO implements Serializable {
     /**
      * 接口费用
      */
-    private Integer charging;
+    private String charging;
 
     /**
      * 接口最大可购买次数

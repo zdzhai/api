@@ -19,6 +19,15 @@ spring:
     port: 6379
     host: localhost
     database: 0
+logging:
+  config: classpath:logback-spring.xml
+  level:
+    com.zdzhai.order.mapper: trace
+    #com:
+      #zdzhai: debug
+  #pattern:
+    #console: '%d{yyyy-MM-dd hh:mm:ss} [%thread] %-5level %logger{50} - %msg%n'
+    #console: '%d{yyyy-MM-dd} === [%thread] === %-5level === %logger{50} === - %msg%n'
 mybatis-plus:
   configuration:
     map-underscore-to-camel-case: false

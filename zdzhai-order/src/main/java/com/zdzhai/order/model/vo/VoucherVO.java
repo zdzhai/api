@@ -51,12 +51,12 @@ public class VoucherVO implements Serializable {
     /**
      * 支付金额，单位是分。例如200代表2元
      */
-    private Long payValue;
+    private String payValue;
 
     /**
      * 抵扣金额，单位是分。例如200代表2元
      */
-    private Long actualValue;
+    private String actualValue;
 
     /**
      * 0,普通券；1,秒杀券

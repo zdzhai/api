@@ -42,7 +42,7 @@ public class ApiOrderStatusVO implements Serializable {
     /**
      * 交易金额
      */
-    private Long totalAmount;
+    private String totalAmount;
     /**
      * 支付宝交易凭证号
      */
@@ -66,5 +66,5 @@ public class ApiOrderStatusVO implements Serializable {
     /**
      * 单价
      */
-    private Long charging;
+    private String charging;
 }

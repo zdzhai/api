@@ -44,12 +44,12 @@ public class OrderSnVO implements Serializable {
     /**
      * 单价
      */
-    private Integer charging;
+    private String charging;
 
     /**
      * 交易金额
      */
-    private Long totalAmount;
+    private String totalAmount;
 
     /**
      * 创建时间
