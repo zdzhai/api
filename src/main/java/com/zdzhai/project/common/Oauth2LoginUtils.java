@@ -5,6 +5,7 @@ import cn.hutool.crypto.digest.DigestUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.zdzhai.apicommon.model.entity.User;
 import com.zdzhai.apicommon.model.entity.thirdparty.vo.LoginUserVo;
+import com.zdzhai.apicommon.utils.TokenUtils;
 import com.zdzhai.project.constant.UserConstant;
 import com.zdzhai.project.mapper.UserMapper;
 import org.springframework.beans.BeanUtils;
@@ -22,9 +23,6 @@ public class Oauth2LoginUtils {
 
     @Resource
     private UserMapper userMapper;
-
-    @Resource
-    private TokenUtils tokenUtils;
 
     private static Oauth2LoginUtils oauth2LoginUtils;
 
@@ -51,7 +49,8 @@ public class Oauth2LoginUtils {
             String newMobile = "".equals(mobile) ? "" : mobile.substring(0, 3) + "****" + mobile.substring(7);
             user.setMobile(newMobile);
             BeanUtils.copyProperties(user,loginUserVo);
-            String token = oauth2LoginUtils.tokenUtils.createToken(String.valueOf(loginUserVo.getId()),loginUserVo.getUserAccount());
+            TokenUtils tokenUtils = new TokenUtils();
+            String token = tokenUtils.createToken(String.valueOf(loginUserVo.getId()),loginUserVo.getUserAccount());
             loginUserVo.setToken(token);
         }else {
             String accessKey = DigestUtil.md5Hex(UserConstant.SALT + userAccount + RandomUtil.randomNumbers(5));
@@ -66,7 +65,8 @@ public class Oauth2LoginUtils {
             // 进行登录操作
             User dbUser = oauth2LoginUtils.userMapper.selectById(user1.getId());
             BeanUtils.copyProperties(dbUser,loginUserVo);
-            String token = oauth2LoginUtils.tokenUtils.createToken(String.valueOf(loginUserVo.getId()),loginUserVo.getUserAccount());
+            TokenUtils tokenUtils = new TokenUtils();
+            String token = tokenUtils.createToken(String.valueOf(loginUserVo.getId()),loginUserVo.getUserAccount());
             loginUserVo.setToken(token);
         }
         return loginUserVo;

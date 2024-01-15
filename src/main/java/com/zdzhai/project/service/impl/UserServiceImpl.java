@@ -22,9 +22,9 @@ import com.zdzhai.apicommon.model.entity.User;
 import com.zdzhai.apicommon.model.entity.thirdparty.Oauth2LoginTo;
 import com.zdzhai.apicommon.utils.CookieUtils;
 import com.zdzhai.apicommon.utils.ResultUtils;
+import com.zdzhai.apicommon.utils.TokenUtils;
 import com.zdzhai.project.common.CheckPhoneNumber;
 import com.zdzhai.project.common.SmsLimiter;
-import com.zdzhai.project.common.TokenUtils;
 import com.zdzhai.project.mapper.InterfaceInfoMapper;
 import com.zdzhai.project.mapper.UserMapper;
 import com.zdzhai.project.model.dto.SmsDTO;
@@ -196,7 +196,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
         stringRedisTemplate.opsForHash().getOperations().expire(userKey,720, TimeUnit.HOURS);
 
         LoginUserVO loginUserVO = new LoginUserVO();
-        BeanUtils.copyProperties(user,loginUserVO);
+        BeanUtils.copyProperties(safetyUser,loginUserVO);
         TokenUtils tokenUtils = new TokenUtils();
         //生成token
         String token = tokenUtils.createToken(user.getId().toString(), loginUserVO.getUserAccount());

@@ -7,6 +7,8 @@ import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.RandomUtil;
+import cn.hutool.jwt.JWT;
+import cn.hutool.jwt.JWTUtil;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.IdWorker;
@@ -24,10 +26,7 @@ import com.zdzhai.apicommon.model.entity.InterfaceInfo;
 import com.zdzhai.apicommon.model.entity.User;
 import com.zdzhai.apicommon.service.InnerInterfaceInfoService;
 import com.zdzhai.apicommon.service.InnerUserInterfaceInfoService;
-import com.zdzhai.apicommon.utils.AmountUtils;
-import com.zdzhai.apicommon.utils.CookieUtils;
-import com.zdzhai.apicommon.utils.ResultUtils;
-import com.zdzhai.apicommon.utils.RocketMQUtil;
+import com.zdzhai.apicommon.utils.*;
 import com.zdzhai.order.constant.OrderConstant;
 import com.zdzhai.order.mapper.ApiOrderMapper;
 import com.zdzhai.order.model.dto.order.ApiOrderAddRequest;
@@ -328,28 +327,31 @@ public class ApiOrderServiceImpl extends ServiceImpl<ApiOrderMapper, ApiOrder>
         if (cookies == null || cookies.length == 0) {
             return null;
         }
-        String remember = null;
         String authorization = null;
         for (Cookie cookie : cookies) {
             String name = cookie.getName();
             if (CookieConstant.headAuthorization.equals(name)) {
                 authorization = cookie.getValue();
             }
-            if (CookieConstant.autoLoginAuthCheck.equals(name)) {
-                remember = cookie.getValue();
-            }
         }
         //token 信息有问题则抛异常
-        if (authorization == null || remember == null) {
+        if (authorization == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
-        CookieUtils cookieUtils = new CookieUtils();
-        String[] strings = cookieUtils.decodeAutoLoginKey(remember);
-        if (strings.length != 3) {
-            throw new BusinessException(ErrorCode.ILLEGAL_ERROR, "请重新登录");
+        // 2、验证token是否合法，判断当前登录用户和token中的用户是否相同
+        TokenUtils tokenUtils = new TokenUtils();
+        boolean verifyToken = tokenUtils.verifyToken(authorization);
+        if (!verifyToken) {
+            throw new BusinessException(ErrorCode.ILLEGAL_ERROR);
         }
-        String sId = strings[0];
-        String sUserAccount = strings[1];
+        // 3、验证token是否过期
+        boolean verifyTime = tokenUtils.verifyTokenTime(authorization);
+        if (!verifyTime) {
+            //过期了需要重新登录
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR, "登录状态过期，请重新登录");
+        }
+        JWT jwt = JWTUtil.parseToken(authorization);
+        String sId = (String) jwt.getPayload("id");
         Map<Object, Object> userMap = stringRedisTemplate.opsForHash().entries(API_USER_ID + sId);
         User user = new User();
         if (userMap != null && userMap.size() != 0) {
